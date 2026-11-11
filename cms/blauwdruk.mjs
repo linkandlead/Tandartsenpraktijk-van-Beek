@@ -18,6 +18,10 @@
 const TEL_SPOED = '085 222 13 88'
 const TEL_SPOED_HREF = 'tel:+31852221388'
 const TEL_DIENST = '0900 - 1515'
+const TEL_PRAKTIJK = '0174 622 373'
+const TEL_PRAKTIJK_HREF = 'tel:+31174622373'
+const ADRES = 'Groenelaan 128'
+const POSTCODE_PLAATS = '2675 RS Honselersdijk'
 const TEL_DIENST_HREF = 'tel:09001515'
 
 // --- Gedeelde inhoud (één bron; op elke pagina identiek, FO §6 "Afsluiter — gedeeld") ---
@@ -107,9 +111,9 @@ export default {
     tagline: 'Persoonlijke tandheelkunde voor het hele gezin in Honselersdijk.',
     contact: {
       bedrijf: 'Tandarts Van Beek',
-      telefoon: TEL_SPOED,
-      adres: '[te bevestigen: straat en huisnummer]',
-      postcode_plaats: 'Honselersdijk',
+      telefoon: TEL_PRAKTIJK,
+      adres: ADRES,
+      postcode_plaats: POSTCODE_PLAATS,
     },
     hoofd_nav: [
       { titel: 'De praktijk', href: '/de-praktijk' },
@@ -117,7 +121,7 @@ export default {
       { titel: 'Nieuwe patiënten', href: '/nieuwe-patienten' },
       { titel: 'Contact', href: '/contact' },
     ],
-    primaire_actie: { titel: 'Bel de praktijk', href: TEL_SPOED_HREF },
+    primaire_actie: { titel: 'Bel de praktijk', href: TEL_PRAKTIJK_HREF },
     footer_kolommen: [
       { kop: 'Praktijk', links: [
         { titel: 'De praktijk', href: '/de-praktijk' },
@@ -310,7 +314,7 @@ export default {
           content: {
             eyebrow: 'Kwaliteit',
             titel: 'Kwaliteit en registraties',
-            tekst: '[te bevestigen: BIG-registraties, aangesloten beroepsverenigingen en klachtenregeling, aan te leveren door de praktijk]',
+            tekst: 'Tandarts Van Beek is aangesloten bij de KNMT, de Koninklijke Nederlandse Maatschappij tot bevordering der Tandheelkunde.\n\n[te bevestigen: BIG-registraties en klachtenregeling]',
           },
         },
         AFSLUITER,
@@ -404,7 +408,7 @@ export default {
       intro: 'Behandeling van snurken en slaapapneu met een op maat gemaakte beugel.',
       beeld: '/img/slaapgeneeskunde.webp',
       alt: 'Slapende vrouw',
-      uitleg: 'Snurken of slaapapneu kan uw nachtrust en gezondheid flink beïnvloeden. Een snurk- of apneubeugel (MRA) kan helpen. Voor deze behandeling geldt een aparte aanmeldroute, ook als u nog geen patiënt bij ons bent.\n\n[Bekijk de aanmeldroute](/nieuwe-patienten#keuzehulp)\n\n' + CONCEPT,
+      uitleg: 'Snurken of slaapapneu kan uw nachtrust en gezondheid flink beïnvloeden. Een snurk- of apneubeugel (MRA) kan helpen. Voor een snurkbeugel of apneubeugel is er geen wachtlijst, ook niet als u nog geen patiënt bij ons bent.\n\n[Meld u aan via het formulier](/contact#bericht)\n\n' + CONCEPT,
       stappen: [
         { nummer: '1', titel: 'Verwijzing', tekst: '[te bevestigen: verwijzing via huisarts, KNO-arts of slaapcentrum]' },
         { nummer: '2', titel: 'Intake', tekst: 'We onderzoeken uw gebit en bespreken de mogelijkheden.' },
@@ -436,7 +440,7 @@ export default {
           content: {
             eyebrow: 'Inschrijfbeleid',
             titel: 'Ons huidige beleid',
-            tekst: 'Momenteel nemen wij geen nieuwe volwassen patiënten aan. Kinderen tot en met 12 jaar kunnen zich wel inschrijven.\n\n[te bevestigen: definitieve toelatingsregels en uitzonderingen, goed te keuren door de praktijk]',
+            tekst: 'Wij zijn op dit moment gesloten voor nieuwe patiënten boven de 12 jaar. Kinderen van 0 tot en met 12 jaar kunnen nog wel ingeschreven worden.\n\nPartners en kinderen van patiënten die al bij ons onder behandeling zijn, kunnen zich op de wachtlijst laten zetten.\n\nVoor een snurkbeugel of apneubeugel is er géén wachtlijst: u kunt zich direct aanmelden.',
             bijgewerkt: '2026-11-11',
           },
         },
@@ -451,10 +455,10 @@ export default {
             keuze_label: 'Kies uw situatie',
             kolommen: '4',
             items: [
-              { titel: 'Kind van 0 t/m 12 jaar', tekst: 'Kinderen tot en met 12 jaar kunnen zich aanmelden. Bel de praktijk om uw kind in te schrijven; neem het BSN en de verzekeringsgegevens van uw kind bij de hand.\n\n[te bevestigen: online aanmeldformulier voor kinderen]', link: 'tel:+31852221388', knoptekst: 'Bel om in te schrijven', icoon: 'geen' },
-              { titel: 'Nieuwe volwassen patiënt', tekst: 'Er geldt op dit moment een patiëntenstop voor nieuwe volwassen patiënten. Wij kunnen u helaas niet inschrijven.', icoon: 'geen' },
-              { titel: 'Gezinslid van een bestaande patiënt', tekst: '[te bevestigen: voorwaarden en wachtlijstprocedure voor gezinsleden]. Neem contact met ons op, dan bespreken we de mogelijkheden.', link: '/contact', knoptekst: 'Neem contact op', icoon: 'geen' },
-              { titel: 'Snurk- of apneubehandeling', tekst: 'Voor een snurk- of apneubeugel geldt een aparte aanmeldroute, ook als u nog geen patiënt bij ons bent.', link: '/behandelingen/slaapgeneeskunde', knoptekst: 'Bekijk de aanmeldroute', icoon: 'geen' },
+              { titel: 'Kind van 0 t/m 12 jaar', tekst: 'Kinderen van 0 tot en met 12 jaar kunnen nog worden ingeschreven. Vul het formulier in met als onderwerp *Inschrijven*, of bel de praktijk. Wij nemen daarna contact met u op.', link: '/contact#bericht', knoptekst: 'Kind aanmelden', icoon: 'geen' },
+              { titel: 'Nieuwe patiënt ouder dan 12 jaar', tekst: 'Wij zijn op dit moment gesloten voor nieuwe patiënten boven de 12 jaar en kunnen u helaas niet inschrijven. Bent u partner of kind van een patiënt die al bij ons onder behandeling is? Dan kunt u op de wachtlijst.', icoon: 'geen' },
+              { titel: 'Partner of kind van een bestaande patiënt', tekst: 'Partners en kinderen van patiënten die al bij ons onder behandeling zijn, kunnen zich op de wachtlijst laten zetten. Vul het formulier in met als onderwerp *Wachtlijst*.', link: '/contact#bericht', knoptekst: 'Op de wachtlijst', icoon: 'geen' },
+              { titel: 'Snurkbeugel of apneubeugel', tekst: 'Voor een snurkbeugel of apneubeugel is er geen wachtlijst, ook niet als u nog geen patiënt bij ons bent. Vul het formulier in met als onderwerp *Snurk- of apneubeugel*; wij nemen daarna contact met u op.', link: '/contact#bericht', knoptekst: 'Aanmelden', icoon: 'geen' },
             ],
           },
         },
@@ -464,7 +468,7 @@ export default {
           content: {
             titel: 'Vragen over inschrijven',
             vragen: [
-              { vraag: 'Komt er een wachtlijst voor volwassenen?', antwoord: '[te bevestigen door de praktijk]' },
+              { vraag: 'Is er een wachtlijst?', antwoord: 'Alleen voor partners en kinderen van patiënten die al bij ons onder behandeling zijn. Voor een snurk- of apneubeugel is er geen wachtlijst.' },
               { vraag: 'Wat neem ik mee naar de eerste afspraak?', antwoord: 'Een geldig legitimatiebewijs en uw verzekeringsgegevens. Voor kinderen het BSN van uw kind.' },
             ],
           },
@@ -495,10 +499,10 @@ export default {
             keuze_label: 'Kies wat u wilt regelen',
             kolommen: '4',
             items: [
-              { titel: 'Controleafspraak maken', tekst: 'Bent u al patiënt? U ontvangt een persoonlijke e-mail met een link om uw controleafspraak in te plannen. Geen e-mail ontvangen? Bel de praktijk.\n\n[te bevestigen: werking van de persoonlijke e-maillink]', link: 'tel:+31852221388', knoptekst: 'Bel de praktijk', icoon: 'geen' },
-              { titel: 'Afspraak wijzigen', tekst: 'Wilt u een afspraak verzetten? Bel de praktijk, dan zoeken we samen een nieuw moment.', link: 'tel:+31852221388', knoptekst: 'Bel de praktijk', icoon: 'geen' },
-              { titel: 'Afspraak annuleren', tekst: 'Annuleren doet u telefonisch. [te bevestigen: annuleringstermijn en eventuele kosten bij niet tijdig afzeggen]', link: 'tel:+31852221388', knoptekst: 'Bel de praktijk', icoon: 'geen' },
-              { titel: 'Andere afspraak', tekst: 'Voor alle overige afspraken, zoals een behandeling of consult, plant u telefonisch in.', link: 'tel:+31852221388', knoptekst: 'Bel de praktijk', icoon: 'geen' },
+              { titel: 'Controleafspraak maken', tekst: 'U kunt uw controleafspraak online maken. Wanneer het tijd is voor de halfjaarlijkse controle, krijgt u hiervoor een link per e-mail toegestuurd. Geen e-mail ontvangen? Bel de praktijk.', link: TEL_PRAKTIJK_HREF, knoptekst: 'Bel de praktijk', icoon: 'geen' },
+              { titel: 'Afspraak wijzigen', tekst: 'Wilt u een afspraak verzetten? Bel de praktijk, dan zoeken we samen een nieuw moment.', link: TEL_PRAKTIJK_HREF, knoptekst: 'Bel de praktijk', icoon: 'geen' },
+              { titel: 'Afspraak afzeggen', tekst: 'Afzeggen doet u telefonisch via ' + TEL_PRAKTIJK + '. Wilt u buiten de gewone afspraaktijden (8.50 tot 12.00 uur) een afspraak op korte termijn afzeggen? Bel dan [' + TEL_SPOED + '](' + TEL_SPOED_HREF + ').\n\n[te bevestigen: annuleringstermijn en eventuele kosten bij niet tijdig afzeggen]', link: TEL_PRAKTIJK_HREF, knoptekst: 'Bel de praktijk', icoon: 'geen' },
+              { titel: 'Andere afspraak', tekst: 'Voor alle overige afspraken, zoals een behandeling of consult, plant u telefonisch in.', link: TEL_PRAKTIJK_HREF, knoptekst: 'Bel de praktijk', icoon: 'geen' },
             ],
           },
         },
@@ -524,7 +528,7 @@ export default {
         paginaHeader({
           eyebrow: 'Spoed',
           heading: 'Direct hulp bij spoed',
-          subheading: 'Heeft u acute klachten aan uw gebit? Bel ons tijdens de spoeduren. Buiten openingstijden belt u de tandartsendienst.',
+          subheading: 'Ongeval of acute klachten? Maandag t/m donderdag 8.50 tot 17.00 uur en vrijdag tot 12.00 uur belt u ons. Daarna, in het weekend en op feestdagen belt u Dental 365.',
           cta: ['Bel ' + TEL_SPOED, TEL_SPOED_HREF],
           hoogte: 'compact',
         }),
@@ -534,7 +538,7 @@ export default {
           content: {
             eyebrow: 'Wat te doen',
             titel: 'Zo handelt u bij spoed',
-            tekst: '- Bel ons tijdens de spoeduren op [' + TEL_SPOED + '](' + TEL_SPOED_HREF + ').\n- Buiten openingstijden, in de avond en in het weekend: bel de tandartsendienst Dental365 op [' + TEL_DIENST + '](' + TEL_DIENST_HREF + ').\n- Bij ernstig letsel aan het gezicht of hevige zwelling met koorts: bel 112.\n\nBeschrijf uw klachten aan de telefoon. Wij beoordelen samen met u hoe snel u gezien moet worden.',
+            tekst: '- Ongeval of acute klachten op maandag t/m donderdag van 8.50 tot 17.00 uur en op vrijdag tot 12.00 uur: bel [' + TEL_SPOED + '](' + TEL_SPOED_HREF + ').\n- Vanaf 17.00 uur op werkdagen en in het weekend en op feestdagen: bel Dental 365 op [' + TEL_DIENST + '](' + TEL_DIENST_HREF + ').\n- Bereikt u ons niet op ' + TEL_SPOED + '? Bel dan ' + TEL_PRAKTIJK + ' en luister de tekst op het antwoordapparaat helemaal af: daar hoort u wanneer de dienstdoende of waarnemende tandarts bereikbaar is.\n- Bij ernstig letsel aan het gezicht of hevige zwelling met koorts: bel 112.\n\nBeschrijf uw klachten aan de telefoon. Wij beoordelen samen met u hoe snel u gezien moet worden.',
           },
         },
         {
@@ -545,9 +549,8 @@ export default {
             intro: 'Beide routes zijn altijd zichtbaar. Kies het nummer dat past bij het moment.',
             feiten: [
               { label: 'Tijdens spoeduren', waarde: TEL_SPOED },
-              { label: 'Spoeduren', waarde: '[te bevestigen: dagen en tijden]' },
-              { label: 'Avond en weekend (Dental365)', waarde: TEL_DIENST },
-              { label: 'Feestdagen', waarde: '[te bevestigen: feestdagenregeling]' },
+              { label: 'Spoeduren', waarde: 'Maandag t/m donderdag 8.50 tot 17.00 uur, vrijdag 8.50 tot 12.00 uur' },
+              { label: 'Na 17.00 uur, weekend en feestdagen (Dental 365)', waarde: TEL_DIENST },
             ],
           },
         },
@@ -595,10 +598,20 @@ export default {
             titel: 'Contactgegevens',
             feiten: [
               { label: 'Praktijk', waarde: 'Tandarts Van Beek' },
-              { label: 'Adres', waarde: '[te bevestigen: straat en huisnummer], Honselersdijk' },
-              { label: 'Telefoon', waarde: TEL_SPOED },
+              { label: 'Adres', waarde: ADRES + ', ' + POSTCODE_PLAATS },
+              { label: 'Telefoon', waarde: TEL_PRAKTIJK },
+              { label: 'Spoed (ongeval)', waarde: TEL_SPOED },
               { label: 'Telefonisch bereikbaar', waarde: '[te bevestigen: tijden]' },
             ],
+          },
+        },
+        {
+          type: 'tekst',
+          bg: 'wit',
+          content: {
+            eyebrow: 'Bereikbaarheid',
+            titel: 'Steeds in gesprek?',
+            tekst: 'Zijn wij ’s morgens steeds telefonisch in gesprek? Dat is vervelend; het is dan erg druk. Als u het [contactformulier](#bericht) invult, nemen wij zo spoedig mogelijk contact met u op zodra het wat rustiger is.',
           },
         },
         {
@@ -624,10 +637,10 @@ export default {
             eyebrow: 'Route',
             titel: 'Zo vindt u ons',
             intro: 'Parkeren: [te bevestigen: parkeergelegenheid bij de praktijk].',
-            adres: '[te bevestigen: straat en huisnummer]\nHonselersdijk',
-            telefoon: TEL_SPOED,
+            adres: ADRES + '\n' + POSTCODE_PLAATS,
+            telefoon: TEL_PRAKTIJK,
             knoptekst: 'Route plannen',
-            knop: 'https://www.google.com/maps/search/?api=1&query=Tandarts+Van+Beek+Honselersdijk',
+            knop: 'https://www.google.com/maps/search/?api=1&query=Groenelaan+128+2675+RS+Honselersdijk',
           },
         },
         {
@@ -641,7 +654,7 @@ export default {
               { label: 'Voornaam', type: 'tekst', verplicht: 'ja' },
               { label: 'Achternaam', type: 'tekst', verplicht: 'ja' },
               { label: 'Telefoon', type: 'telefoon', verplicht: 'nee' },
-              { label: 'Onderwerp', type: 'keuze', opties: 'Algemene vraag,Afspraak,Inschrijven,Factuur,Anders', verplicht: 'ja' },
+              { label: 'Onderwerp', type: 'keuze', opties: 'Algemene vraag,Afspraak,Inschrijven,Wachtlijst,Snurk- of apneubeugel,Factuur,Anders', verplicht: 'ja' },
               { label: 'Bericht', type: 'tekstvak', verplicht: 'ja' },
             ],
             knoptekst: 'Controleren en versturen',

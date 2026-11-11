@@ -46,13 +46,17 @@ alleen berichten vanaf het domein dat in het CMS bij de site staat
 Alles wat nog niet bevestigd is, staat in de inhoud als **[te bevestigen: …]** en is op de site geel
 gemarkeerd. De ontwikkelaar heeft geen praktijkregels verzonnen.
 
-1. Adres, openingstijden per dag, telefonische bereikbaarheid, parkeren.
-2. Spoeduren, feestdagenregeling. Het nummer 085 222 13 88 (spoeduren, ook gebruikt als
-   praktijknummer) en 0900-1515 (Dental365) komen uit het FO en moeten nog geverifieerd worden.
-3. Inschrijfbeleid/patiëntenstop en uitzonderingen, aanmeldformulier voor kinderen.
-4. Werking van de persoonlijke e-maillink voor controleafspraken; annuleringstermijn.
-5. Teamleden (naam, functie, foto) in het CMS onder Team.
-6. Behandelaanbod en medische teksten (nu concepttekst).
-7. Privacyverklaring, praktische informatie, lijst van bestaande URL's voor redirects.
+1. Openingstijden per dag, telefonische bereikbaarheid, parkeren.
+2. Annuleringstermijn/-kosten, verwijsroute snurk-/apneubeugel, duur van een controle.
+3. Teamleden (naam, functie, foto) in het CMS onder Team; korte geschiedenis van de praktijk.
+4. Behandelaanbod en medische teksten (nu concepttekst); BIG-registraties en klachtenregeling.
+5. Privacyverklaring, praktische informatie, lijst van bestaande URL's voor redirects.
+6. Of het oude inschrijfformulier vervangen mag worden door het contactformulier (nu: onderwerp
+   *Inschrijven*, *Wachtlijst* of *Snurk- of apneubeugel*).
+7. Een eventueel nieuwsoverzicht (op de huidige site aanwezig; nu niet overgenomen).
+
+Wél verwerkt uit de huidige site: adres (Groenelaan 128, 2675 RS Honselersdijk), praktijknummer
+0174-622373, spoednummer 085-2221388 met spoeduren, Dental 365 (0900-1515), online controleafspraak
+via e-maillink, inschrijfbeleid en wachtlijst, KNMT-lidmaatschap.
 8. **Definitieve fotografie en logo.** De huidige beelden zijn uitsneden uit de goedgekeurde
    homepage-afbeelding en het logo is een benadering; vervang ze door de originele assets.
