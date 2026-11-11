@@ -54,9 +54,9 @@ gemarkeerd. De ontwikkelaar heeft geen praktijkregels verzonnen.
 6. Of het oude inschrijfformulier vervangen mag worden door het contactformulier (nu: onderwerp
    *Inschrijven*, *Wachtlijst* of *Snurk- of apneubeugel*).
 7. Een eventueel nieuwsoverzicht (op de huidige site aanwezig; nu niet overgenomen).
+8. **Definitieve fotografie en logo.** De huidige beelden zijn uitsneden uit de goedgekeurde
+   homepage-afbeelding en het logo is een benadering; vervang ze door de originele assets.
 
 Wél verwerkt uit de huidige site: adres (Groenelaan 128, 2675 RS Honselersdijk), praktijknummer
 0174-622373, spoednummer 085-2221388 met spoeduren, Dental 365 (0900-1515), online controleafspraak
 via e-maillink, inschrijfbeleid en wachtlijst, KNMT-lidmaatschap.
-8. **Definitieve fotografie en logo.** De huidige beelden zijn uitsneden uit de goedgekeurde
-   homepage-afbeelding en het logo is een benadering; vervang ze door de originele assets.

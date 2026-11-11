@@ -116,7 +116,6 @@ const config = {
     { src: '^/(fonts|img)/(.*)$', headers: { 'Cache-Control': 'public, max-age=31536000, immutable' }, continue: true },
     { handle: 'filesystem' },
     { src: '^/(.+?)/?$', dest: '/$1/index.html', check: true },
-    { handle: 'miss' },
     { src: '/.*', status: 404, dest: '/404.html' },
   ],
 }
