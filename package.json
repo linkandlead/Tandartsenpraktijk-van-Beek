@@ -1,0 +1,16 @@
+{
+  "name": "tandarts-van-beek",
+  "private": true,
+  "type": "module",
+  "description": "Website Tandarts Van Beek — eigen frontend (model A) op het Link & Lead CMS",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:offline": "CMS_OFFLINE=1 node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "preview": "node scripts/build.mjs && node scripts/serve.mjs",
+    "cms:push": "node scripts/cms-push.mjs cms/blauwdruk.mjs",
+    "check:cms": "node scripts/check-blauwdruk.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
