@@ -53,24 +53,40 @@ writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow:
 writeFileSync(path.join(DIST, 'inhoud.json'), JSON.stringify(inhoud))
 
 // --- Vercel Build Output API v3
-const CSP = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${cfg.cmsUrl}`,
-  `connect-src 'self' ${cfg.cmsUrl}`,
-  "img-src 'self' data: https:",
-  "style-src 'self' 'unsafe-inline'",
-  "font-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join('; ')
+const cspMet = (frameAncestors) =>
+  [
+    "default-src 'self'",
+    `script-src 'self' 'unsafe-inline' ${cfg.cmsUrl}`,
+    `connect-src 'self' ${cfg.cmsUrl}`,
+    "img-src 'self' data: https:",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
+    `frame-ancestors ${frameAncestors}`,
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ')
+// Gewone pagina's mogen nergens ingesloten worden. Alleen de voorvertoning mag in het voorbeeldvenster van
+// de CMS-editor staan (CMS-verzoek "Editorvoorbeeld in het echte ontwerp van een eigen frontend").
+const CSP = cspMet("'none'")
+const CSP_VOORVERTONING = cspMet(`'self' ${cfg.cmsUrl}`)
 const config = {
   version: 3,
   routes: [
+    { src: '^/__voorvertoning(/.*)?$', headers: { 'Content-Security-Policy': CSP_VOORVERTONING }, continue: true },
     {
-      src: '/(.*)',
+      src: '^/(?!__voorvertoning)(.*)$',
       headers: {
         'Content-Security-Policy': CSP,
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+      },
+      continue: true,
+    },
+    {
+      src: '^/__voorvertoning(/.*)?$',
+      headers: {
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
