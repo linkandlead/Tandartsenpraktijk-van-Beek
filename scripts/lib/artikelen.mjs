@@ -48,6 +48,9 @@ export function fotoMaat(src, breedte) {
     u.searchParams.set('auto', 'compress')
     u.searchParams.set('cs', 'tinysrgb')
     u.searchParams.set('w', String(breedte))
+    // Een vaste hoogte (h=…) uit het CMS-adres zou bij een kleinere breedte een staande uitsnede geven.
+    u.searchParams.delete('h')
+    u.searchParams.delete('dpr')
     return u.toString()
   } catch {
     return src

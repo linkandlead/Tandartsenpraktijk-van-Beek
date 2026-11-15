@@ -211,6 +211,7 @@ test('hulpjes: token, pad, cookies, links en fotomaat', () => {
   assert.equal(voorvertoningsLinks('<a href="/spoed#a"><link href="/styles.css">'), '<a href="/__voorvertoning?pad=%2Fspoed#a"><link href="/styles.css">')
   assert.match(fotoMaat('https://images.pexels.com/photos/1/a.jpeg?x=1', 480), /w=480/)
   assert.equal(fotoMaat('https://elders.nl/a.jpg', 480), 'https://elders.nl/a.jpg')
+  assert.doesNotMatch(fotoMaat('https://images.pexels.com/photos/1/a.jpeg?auto=compress&w=1600&h=900&fit=crop', 480), /h=900/)
   assert.equal(normaliseerArtikel({ slug: '../x', data: { titel: 'X' } }), null)
   assert.deepEqual(sorteerArtikelen([{ datum: '' }, { datum: '2026-01-01' }]).map((a) => a.datum), ['2026-01-01', ''])
 })
