@@ -8,10 +8,11 @@ const ANKERS = { formulier_bouwer: 'bericht', mensen: 'team', kaart: 'route', ar
 
 // Interne links in de voorvertoning laten doorverwijzen naar de voorvertoning van die pagina, zodat
 // doorklikken in het concept blijft. Assets (css, js, beelden, fonts) blijven ongemoeid.
-export function voorvertoningsLinks(html) {
+export function voorvertoningsLinks(html, { ingesloten = false } = {}) {
+  const extra = ingesloten ? '&amp;ingesloten=1' : ''
   return html.replace(/href="(\/(?!\/)[^"#]*)(#[^"]*)?"/g, (heel, pad, hash = '') => {
     if (/^\/(styles\.css|site\.js|img\/|fonts\/|favicon|__voorvertoning)/.test(pad)) return heel
-    return `href="/__voorvertoning?pad=${encodeURIComponent(pad)}${hash}"`
+    return `href="/__voorvertoning?pad=${encodeURIComponent(pad)}${extra}${hash}"`
   })
 }
 
@@ -73,7 +74,7 @@ export function renderPagina(
 ${secties.join('\n')}
 </main>
 ${siteFooter(site)}`
-  if (voorvertoning) body = voorvertoningsBalk(voorvertoning.pad) + '\n' + voorvertoningsLinks(body)
+  if (voorvertoning) body = (voorvertoning.ingesloten ? '' : voorvertoningsBalk(voorvertoning.pad) + '\n') + voorvertoningsLinks(body, voorvertoning)
 
   return `<!doctype html>
 <html lang="nl">
@@ -82,7 +83,7 @@ ${head({ titel, beschrijving: txt(p.beschrijving, 300) || txt(seo.beschrijving, 
 ${geenIndex ? '<meta name="robots" content="noindex, nofollow">' : ''}
 ${heeftFormulier && site.id ? `<script defer src="${attr(cmsUrl)}/cms-client.js" data-site="${attr(site.id)}"></script>` : ''}
 </head>
-<body${voorvertoning ? ' class="met-voorbeeldbalk"' : ''}>
+<body${voorvertoning && !voorvertoning.ingesloten ? ' class="met-voorbeeldbalk"' : ''}>
 <a class="skiplink" href="#inhoud">${esc(tekst(site, 'algemeen.skiplink'))}</a>
 ${body}
 </body>

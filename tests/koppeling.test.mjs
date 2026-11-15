@@ -163,6 +163,16 @@ test('voorvertoning: geldig token toont het concept met balk, privé en noindex'
   assert.doesNotMatch(r.body, /meet\.js/, 'voorbeelden tellen niet mee in de statistieken')
 })
 
+test('voorvertoning ingesloten in de CMS-editor: geen eigen balk, doorklikken blijft ingesloten', async () => {
+  const { vraag } = opzet()
+  const r = await vraag(`/__voorvertoning?pad=/&token=${TOKEN_GELDIG}&ingesloten=1`)
+  assert.equal(r.status, 200)
+  assert.match(r.body, /CONCEPTKOP/)
+  assert.doesNotMatch(r.body, /Voorbeeld, niet gepubliceerd|met-voorbeeldbalk/)
+  assert.match(r.body, /href="\/__voorvertoning\?pad=%2Fcontact&amp;ingesloten=1"/)
+  assert.equal(r.headers['cache-control'], 'private, no-store')
+})
+
 test('voorvertoning: bezoekers zien nooit een concept', async () => {
   const { vraag } = opzet()
   await vraag(`/__voorvertoning?pad=/&token=${TOKEN_GELDIG}`)

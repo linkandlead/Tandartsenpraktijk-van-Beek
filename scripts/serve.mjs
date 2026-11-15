@@ -29,7 +29,7 @@ http
     }
     const r = await verwerk({ pad, zoek: url.searchParams, cookies: leesCookies(req.headers.cookie) }, opties)
     // Lokaal is er geen https: zonder Secure kan de browser de voorvertoningscookie bewaren.
-    if (r.headers['set-cookie']) r.headers['set-cookie'] = r.headers['set-cookie'].replace('; Secure', '')
+    if (r.headers['set-cookie']) r.headers['set-cookie'] = r.headers['set-cookie'].replace('; Secure', '').replace('SameSite=None; Partitioned', 'SameSite=Lax')
     res.writeHead(r.status, r.headers)
     res.end(r.body)
   })

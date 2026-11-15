@@ -214,7 +214,9 @@ async function voorvertoning(verzoek, o) {
     return antwoord(503, '<!doctype html><html lang="nl"><meta charset="utf-8"><title>Voorbeeld niet beschikbaar</title><p>Het voorbeeld kan nu niet worden opgehaald.</p>', koppen)
   }
   const kaal = pad.split('?')[0]
-  const html = render(inhoud, kaal, o, { concept: conceptPagina, voorvertoning: { pad: kaal } }) ?? render404(inhoud, o, { voorvertoning: { pad: kaal } })
+  // &ingesloten=1: in het voorbeeldvenster van de CMS-editor; dan geen eigen balk (het CMS toont de context).
+  const vv = { pad: kaal, ingesloten: verzoek.zoek.get('ingesloten') === '1' }
+  const html = render(inhoud, kaal, o, { concept: conceptPagina, voorvertoning: vv }) ?? render404(inhoud, o, { voorvertoning: vv })
   const extra = tokenVorm(uitQuery) ? { 'set-cookie': cookieKop(token, tokenSecondenGeldig(token, nu)) } : {}
   return antwoord(200, html, { ...koppen, ...extra })
 }

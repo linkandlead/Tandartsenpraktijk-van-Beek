@@ -151,7 +151,7 @@ test('headers: alleen /__voorvertoning mag in een frame van het CMS, de rest ner
   for (const pad of ['/__voorvertoning', '/__voorvertoning/sluiten']) {
     const r = match(pad)
     assert.equal(r.length, 1, `precies één CSP voor ${pad}`)
-    assert.match(r[0].headers['Content-Security-Policy'], /frame-ancestors https:\/\/cms\.linkandlead\.nl(;|$)/)
+    assert.match(r[0].headers['Content-Security-Policy'], /frame-ancestors 'self' https:\/\/cms\.linkandlead\.nl(;|$)/)
     assert.doesNotMatch(r[0].headers['Content-Security-Policy'], /'none'/)
     assert.equal(r[0].headers['X-Robots-Tag'], 'noindex, nofollow')
     assert.equal(r[0].headers['Cache-Control'], 'private, no-store')
@@ -159,7 +159,7 @@ test('headers: alleen /__voorvertoning mag in een frame van het CMS, de rest ner
   assert.equal(cmsOrigin('https://cms.linkandlead.nl/'), 'https://cms.linkandlead.nl')
   assert.equal(cmsOrigin('http://onveilig.test'), 'https://cms.linkandlead.nl', 'alleen https')
   assert.equal(cmsOrigin('niet-een-adres'), 'https://cms.linkandlead.nl')
-  assert.match(voorvertoningCsp('https://cms.ander.nl'), /frame-ancestors https:\/\/cms\.ander\.nl;/)
+  assert.match(voorvertoningCsp('https://cms.ander.nl'), /frame-ancestors 'self' https:\/\/cms\.ander\.nl;/)
   assert.match(csp('https://cms.ander.nl'), /frame-ancestors 'none'/)
 })
 
@@ -168,7 +168,7 @@ test('antwoorden van de voorvertoning: CSP met het CMS als frame-ouder, noindex 
   const o = { bron, cfg: null, siteUrl: 'https://test.nl', cmsUrl: 'https://cms.linkandlead.nl' }
   const vraag = (pad, zoek = '') => verwerk({ pad, zoek: new URLSearchParams(zoek), cookies: {} }, o)
   for (const r of [await vraag('/__voorvertoning', 'pad=/'), await vraag('/__voorvertoning/sluiten', 'pad=/'), await vraag('/__voorvertoning/onbekend')]) {
-    assert.match(r.headers['content-security-policy'], /frame-ancestors https:\/\/cms\.linkandlead\.nl;/)
+    assert.match(r.headers['content-security-policy'], /frame-ancestors 'self' https:\/\/cms\.linkandlead\.nl;/)
     assert.equal(r.headers['x-robots-tag'], 'noindex, nofollow')
     assert.equal(r.headers['cache-control'], 'private, no-store')
   }

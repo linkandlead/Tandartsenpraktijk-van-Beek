@@ -31,9 +31,9 @@ export function csp(cmsUrl, { frameAncestors = "'none'" } = {}) {
   ].join('; ')
 }
 
-// De CSP voor de voorvertoning: alleen het CMS mag hem in een frame tonen.
+// De CSP voor de voorvertoning: alleen de site zelf en het CMS mogen hem in een frame tonen (handboek §6.3).
 export function voorvertoningCsp(cmsUrl) {
-  return csp(cmsUrl, { frameAncestors: cmsOrigin(cmsUrl) })
+  return csp(cmsUrl, { frameAncestors: `'self' ${cmsOrigin(cmsUrl)}` })
 }
 
 export const VOORVERTONING_KOPPEN = { 'x-robots-tag': 'noindex, nofollow', 'cache-control': 'private, no-store' }

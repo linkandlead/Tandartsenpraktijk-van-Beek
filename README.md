@@ -41,6 +41,14 @@ Geen dependencies; Node ≥ 22.
 
 `CMS_BASE` en `SITE_ID` worden niet meer gebruikt (het site-id komt nu uit `/api/v1/site`).
 
+## Voorbeeld in de CMS-editor
+
+`/__voorvertoning` mag (alleen die route) ingesloten worden door het CMS (`frame-ancestors 'self' CMS_URL`); alle
+andere pagina's blijven `frame-ancestors 'none'`. Met `&ingesloten=1` laat de site haar eigen balk weg. De
+voorbeeldcookie is `SameSite=None; Partitioned`, zodat doorklikken ook in het editorvenster werkt. Het CMS moet
+het insluiten nog bouwen: CMS-verzoek "Editorvoorbeeld in het echte ontwerp van een eigen frontend (model A)".
+Tot dan toont het editorvenster de standaardopmaak; het echte ontwerp zie je via "Voorbeeld op de site".
+
 ## Siteregister
 
 "Adres voor Voorbeeld op de site": `https://tandartsenpraktijk-van-beek.vercel.app/__voorvertoning`
