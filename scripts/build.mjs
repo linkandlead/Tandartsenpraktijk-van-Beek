@@ -1,92 +1,62 @@
-// Build van de Tandarts Van Beek-frontend (model A, headless op het Link & Lead CMS).
+// Build van de Tandarts Van Beek-site (model A, eigen frontend op Link & Lead One).
 //
-// 1. Haalt de gepubliceerde content op via GET {CMS_BASE}/api/cms/content (Bearer CMS_TOKEN).
-// 2. Rendert elke CMS-pagina als statische, server-side gerenderde HTML in het eigen ontwerp.
-// 3. Schrijft sitemap, robots.txt, 404 en de Vercel Build Output-config (redirects uit het CMS,
-//    beveiligingsheaders).
+// 1. Haalt alle gepubliceerde inhoud op via de lees-API v1 en bewaart die als momentopname
+//    (`inhoud.json`): de terugval als het CMS later even onbereikbaar is.
+// 2. Schrijft een Vercel Build Output (v3): statische bestanden (css, js, beelden, fonts) en één
+//    serverfunctie die elke pagina rendert met de actuele CMS-inhoud (verversing binnen ±1 minuut),
+//    plus /__voorvertoning, /artikelen en /sitemap.xml.
 //
-//   npm run build                 → content uit het CMS (CMS_TOKEN vereist)
-//   CMS_OFFLINE=1 npm run build   → lokale preview uit cms/blauwdruk.mjs (geen token nodig)
-import { mkdirSync, writeFileSync, cpSync, rmSync, existsSync } from 'node:fs'
+//   npm run build                 → inhoud uit het CMS (CMS_URL + CMS_TOKEN vereist)
+//   CMS_OFFLINE=1 npm run build   → testdata uit tests/fixtures (geen token nodig, niet voor productie)
+//
+// Is het CMS tijdens de build onbereikbaar, dan stopt de build met een fout. Vercel laat dan de vorige
+// deployment gewoon live staan.
+import { mkdirSync, writeFileSync, cpSync, rmSync, readdirSync } from 'node:fs'
 import path from 'node:path'
-import { leesEnv, haalCmsContent, blauwdrukAlsContent, normaliseer } from './lib/inhoud.mjs'
-import { renderPagina } from './lib/pagina.mjs'
-import { resolveRedirects } from './lib/redirects.mjs'
+import { laadAlles } from './lib/cms-v1.mjs'
+import { leesEnv, cmsConfig, siteUrl, blauwdrukAlsInhoud } from './lib/omgeving.mjs'
 
 const env = leesEnv()
-const CMS_BASE = (env.CMS_BASE || 'https://linkandlead.nl').replace(/\/$/, '')
-const SITE_URL = (env.SITE_URL || 'https://tandartsenpraktijk-van-beek.vercel.app').replace(/\/$/, '')
-const SITE_ID = env.SITE_ID || ''
+const cfg = cmsConfig(env)
 const OFFLINE = env.CMS_OFFLINE === '1'
 
-let ruw
+let inhoud
 if (OFFLINE) {
-  console.log('⚠ CMS_OFFLINE=1 — preview uit cms/blauwdruk.mjs (niet voor productie).')
-  ruw = await blauwdrukAlsContent()
+  console.log('⚠ CMS_OFFLINE=1 — testdata uit tests/fixtures (niet voor productie).')
+  inhoud = await blauwdrukAlsInhoud()
 } else {
-  if (!env.CMS_TOKEN) {
-    console.error('✗ Zet CMS_TOKEN (zie .env.example), of gebruik CMS_OFFLINE=1 voor een lokale preview.')
+  if (!cfg.token) {
+    console.error('✗ Zet CMS_URL en CMS_TOKEN (zie .env.example), of gebruik CMS_OFFLINE=1 voor lokaal werken.')
     process.exit(1)
   }
-  ruw = await haalCmsContent({ base: CMS_BASE, token: env.CMS_TOKEN })
+  try {
+    inhoud = await laadAlles(cfg)
+  } catch (e) {
+    console.error(`✗ Inhoud ophalen uit het CMS mislukt: ${e.message}. De vorige deployment blijft live.`)
+    process.exit(1)
+  }
 }
-const { site, paginas, records } = normaliseer(ruw)
-console.log(`✓ Content: site "${site.naam ?? '?'}", ${paginas.length} pagina('s)${OFFLINE ? ' (offline)' : ' uit het CMS'}.`)
-if (!paginas.length) {
-  console.error('✗ Geen gepubliceerde pagina\'s. Push eerst de blauwdruk: npm run cms:push')
+if (!inhoud.paginas.some((p) => p.slug === '/')) {
+  console.error('✗ Het CMS heeft geen gepubliceerde homepage (slug "/").')
   process.exit(1)
 }
+console.log(`✓ Inhoud: "${inhoud.site.naam || '?'}", ${inhoud.paginas.length} pagina's, ${inhoud.artikelen.length} artikelen${OFFLINE ? ' (offline)' : ' uit het CMS (lees-API v1)'}.`)
 
-const UIT = 'dist'
-rmSync(UIT, { recursive: true, force: true })
-mkdirSync(UIT, { recursive: true })
-cpSync('public', UIT, { recursive: true })
-cpSync('src/styles.css', path.join(UIT, 'styles.css'))
-cpSync('src/site.js', path.join(UIT, 'site.js'))
+// --- dist/: statische bestanden + momentopname (ook gebruikt door npm run serve)
+const DIST = 'dist'
+rmSync(DIST, { recursive: true, force: true })
+mkdirSync(DIST, { recursive: true })
+cpSync('public', DIST, { recursive: true })
+cpSync('src/styles.css', path.join(DIST, 'styles.css'))
+cpSync('src/site.js', path.join(DIST, 'site.js'))
+writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /__voorvertoning\n\nSitemap: ${siteUrl(env)}/sitemap.xml\n`)
+writeFileSync(path.join(DIST, 'inhoud.json'), JSON.stringify(inhoud))
 
-const titels = new Map(paginas.map((p) => [p.slug, p.titel]))
-const meldingen = []
-const opties = { site, records, titels, SITE_URL, CMS_BASE, SITE_ID, meldingen }
-
-for (const p of paginas) {
-  const html = renderPagina(p, opties)
-  const doel = p.slug === '/' ? path.join(UIT, 'index.html') : path.join(UIT, p.slug.slice(1), 'index.html')
-  mkdirSync(path.dirname(doel), { recursive: true })
-  writeFileSync(doel, html)
-}
-
-// 404-pagina (zelfde schil, geen CMS-pagina nodig).
-writeFileSync(
-  path.join(UIT, '404.html'),
-  renderPagina(
-    {
-      slug: '/404',
-      titel: 'Pagina niet gevonden',
-      beschrijving: 'Deze pagina bestaat niet (meer).',
-      blokken: [
-        { type: 'header', bg: 'wit', content: { layout: 'compact', hoogte: 'compact', eyebrow: 'Foutmelding 404', heading: 'Deze pagina bestaat niet (meer)', subheading: 'Misschien is de pagina verplaatst. Ga naar de homepage of bekijk direct wat u moet doen bij spoed.', cta_primair_label: 'Naar de homepage', cta_primair_link: '/', cta_secundair_label: 'Spoed', cta_secundair_link: '/spoed', auto_kruimelpad: 'uit' } },
-      ],
-    },
-    { ...opties, noindex: true },
-  ),
-)
-
-// Sitemap + robots.
-const nu = new Date().toISOString().slice(0, 10)
-writeFileSync(
-  path.join(UIT, 'sitemap.xml'),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paginas
-    .map((p) => `  <url><loc>${SITE_URL}${p.slug === '/' ? '/' : p.slug}</loc><lastmod>${nu}</lastmod></url>`)
-    .join('\n')}\n</urlset>\n`,
-)
-writeFileSync(path.join(UIT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`)
-
-// Vercel Build Output API v3: redirects uit het CMS (site.redirects) + headers + nette URL's.
-const redirects = resolveRedirects(site.redirects)
+// --- Vercel Build Output API v3
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${CMS_BASE}`,
-  `connect-src 'self' ${CMS_BASE}`,
+  `script-src 'self' 'unsafe-inline' ${cfg.cmsUrl}`,
+  `connect-src 'self' ${cfg.cmsUrl}`,
   "img-src 'self' data: https:",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
@@ -97,11 +67,6 @@ const CSP = [
 const config = {
   version: 3,
   routes: [
-    ...redirects.map((r) => ({
-      src: '^' + r.van.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/?$',
-      status: r.status,
-      headers: { Location: r.naar },
-    })),
     {
       src: '/(.*)',
       headers: {
@@ -114,23 +79,29 @@ const config = {
       continue: true,
     },
     { src: '^/(fonts|img)/(.*)$', headers: { 'Cache-Control': 'public, max-age=31536000, immutable' }, continue: true },
+    { src: '^/inhoud\\.json$', status: 404 }, // de momentopname is alleen voor de functie
     { handle: 'filesystem' },
-    { src: '^/(.+?)/?$', dest: '/$1/index.html', check: true },
-    { src: '/.*', status: 404, dest: '/404.html' },
+    { src: '/(.*)', dest: '/render' },
   ],
 }
-if (env.VERCEL === '1' || env.BUILD_OUTPUT === '1') {
-  rmSync('.vercel/output', { recursive: true, force: true })
-  mkdirSync('.vercel/output', { recursive: true })
-  cpSync(UIT, '.vercel/output/static', { recursive: true })
-  writeFileSync('.vercel/output/config.json', JSON.stringify(config, null, 2))
-  console.log('✓ Vercel Build Output geschreven (.vercel/output).')
-}
-writeFileSync(path.join(UIT, '_routes.json'), JSON.stringify(config, null, 2)) // gebruikt door npm run serve
 
-for (const m of meldingen) console.warn('⚠ ' + m)
-console.log(`✓ Klaar → ${UIT}/ (${paginas.length} pagina's, ${redirects.length} redirects).`)
-if (!existsSync(path.join(UIT, 'index.html'))) {
-  console.error('✗ Geen homepage (slug "/") in het CMS.')
-  process.exit(1)
+if (env.VERCEL === '1' || env.BUILD_OUTPUT === '1') {
+  const UIT = '.vercel/output'
+  rmSync(UIT, { recursive: true, force: true })
+  mkdirSync(path.join(UIT, 'static'), { recursive: true })
+  cpSync(DIST, path.join(UIT, 'static'), { recursive: true, filter: (bron) => !bron.endsWith('inhoud.json') })
+
+  const FUNC = path.join(UIT, 'functions', 'render.func')
+  mkdirSync(path.join(FUNC, 'lib'), { recursive: true })
+  for (const f of readdirSync('scripts/lib')) if (f.endsWith('.mjs')) cpSync(path.join('scripts/lib', f), path.join(FUNC, 'lib', f))
+  cpSync('scripts/functie.mjs', path.join(FUNC, 'index.mjs'))
+  writeFileSync(path.join(FUNC, 'inhoud.json'), JSON.stringify(inhoud))
+  writeFileSync(path.join(FUNC, 'package.json'), JSON.stringify({ type: 'module' }))
+  writeFileSync(
+    path.join(FUNC, '.vc-config.json'),
+    JSON.stringify({ runtime: 'nodejs22.x', handler: 'index.mjs', launcherType: 'Nodejs', shouldAddHelpers: false, maxDuration: 15 }, null, 2),
+  )
+  writeFileSync(path.join(UIT, 'config.json'), JSON.stringify(config, null, 2))
+  console.log('✓ Vercel Build Output geschreven (.vercel/output, functie "render").')
 }
+console.log(`✓ Klaar → ${DIST}/ (statische bestanden + momentopname).`)

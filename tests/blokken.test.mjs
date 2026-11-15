@@ -7,13 +7,13 @@ import { renderPagina } from '../scripts/lib/pagina.mjs'
 import { controleerBlok } from '../scripts/lib/cms-contract.mjs'
 import { rijkeTekst } from '../scripts/lib/rijk.mjs'
 import { resolveRedirects } from '../scripts/lib/redirects.mjs'
-import blauwdruk from '../cms/blauwdruk.mjs'
+import blauwdruk from './fixtures/blauwdruk.mjs'
 
 const ctx = (extra = {}) => ({ index: 1, isEersteHeader: false, records: {}, slug: '/test', paginaTitel: 'Test', ...extra })
 const item = (n) => ({ titel: `Behandeling ${n}`, tekst: 'Korte omschrijving', link: `/behandelingen/b${n}`, beeld: '/img/preventie.webp', beeld_alt: 'Alt' })
 const telItems = (html) => (html.match(/class="collectie-item"/g) ?? []).length
 const site = { naam: 'Tandarts Van Beek', merk: { naam: 'Tandarts Van Beek' }, navigatie: { hoofd: [{ titel: 'Contact', href: '/contact' }] } }
-const opties = { site, records: {}, titels: new Map(), SITE_URL: 'https://voorbeeld.nl', CMS_BASE: 'https://linkandlead.nl', SITE_ID: '' }
+const opties = { site, titels: new Map(), siteUrl: 'https://voorbeeld.nl', cmsUrl: 'https://cms.linkandlead.nl' }
 
 test('elk renderer-type werkt met lege content (alle velden optioneel)', () => {
   for (const type of Object.keys(RENDERERS)) {
@@ -65,7 +65,7 @@ test('placeholders "[te bevestigen]" worden zichtbaar gemarkeerd', () => {
 })
 
 test('elke pagina heeft precies één h1, ook zonder of met meerdere headers', () => {
-  const h1 = (blokken) => (renderPagina({ slug: '/t', titel: 'T', beschrijving: '', blokken }, opties).match(/<h1[\s>]/g) ?? []).length
+  const h1 = (blokken) => (renderPagina({ slug: '/t', titel: 'T', beschrijving: '', blokken, records: {} }, opties).match(/<h1[\s>]/g) ?? []).length
   assert.equal(h1([{ type: 'header', content: { heading: 'A' } }, { type: 'header', content: { heading: 'B' } }]), 1)
   assert.equal(h1([{ type: 'tekst', content: { titel: 'Zonder header' } }]), 1)
   for (const p of blauwdruk.paginas) assert.equal(h1(p.blokken), 1, p.slug)

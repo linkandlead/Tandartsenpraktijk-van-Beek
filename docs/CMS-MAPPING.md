@@ -1,8 +1,8 @@
 # CMS-mapping — Tandarts Van Beek op het Link & Lead CMS
 
-Model A: deze repo is de eigen frontend; het Link & Lead CMS (`linkandlead-cms`) is de bron voor
-inhoud. De site staat in het CMS als **Tandarts Van Beek** (site-id `51943d8c-718c-4000-b599-6339d790883f`,
-domein `tandartsenpraktijk-van-beek.vercel.app`, status `in_bouw`).
+Model A: deze repo is de eigen frontend; Link & Lead One (`linkandlead-cms`) is de bron voor de
+inhoud, gelezen via de lees-API v1. De site staat in het CMS als **Tandarts Van Beek** (domein
+`tandartsenpraktijk-van-beek.vercel.app`, status `live`).
 
 ## Waar de handoff en het CMS verschillen
 
@@ -24,18 +24,22 @@ opdracht is in die gevallen **de website aangepast aan het CMS**, niet andersom;
 | Feiten / openingstijden | ja — `feiten` | per dag een label/waarde; geen nieuw `Vestigingen`-type nodig |
 | Kaart en locatie | ja — `kaart` | statische illustratie + routeknop, géén externe kaart bij laden |
 | Formulierbouwer | ja — `formulier_bouwer` | velden uit het CMS; e-mail altijd aanwezig; verzending via `cms-client.js` naar `/api/cms/lead` |
-| Afsluitende oproep | ja — `cta` | identieke inhoud op elke pagina (één bron in de blauwdruk) |
+| Afsluitende oproep | ja — `cta` | per pagina een eigen `cta`-blok in het CMS (kan een gedeeld blok worden) |
 | Tekstblok | ja — `tekst` | rijke tekst (CMS-subset) + `bijgewerkt` |
+| Artikelen (`artikelen_grid`) | ja — collectie `artikelen` | kaarten met foto, rubriek, titel, samenvatting en datum; plus `/artikelen` en `/artikelen/<slug>` |
 | Statistieken, testimonials, reviews | ja | **bewust niet gebruikt**: er zijn geen geverifieerde cijfers of reviews |
+| Bewijsstrook, Formulier (`formulier`) | ja | nog **geen weergave** (alleen gebruikt op `/test-landingspagina`); worden overgeslagen |
 
 ### Bouwer-eigen velden
 Het CMS bewaart onbekende top-level velden in blokcontent ongemoeid (`GOVERNANCE.md`, "Bouwer-eigen
 velden"). Deze site gebruikt er alleen: `kaarten.weergave`, `kaarten.knop`, `kaarten.knoptekst`,
 `kaarten.maximaal`, `kaarten.keuze_label` en `mediatekst.beeldvorm`. Ze worden **niet getoond** in
-`/admin`; redacteuren passen ze aan via de blauwdruk (of een CMS-verzoek als ze bewerkbaar moeten
+`/admin`; ze staan in de blokinhoud in het CMS en blijven bij bewerken behouden (een CMS-verzoek is nodig als ze bewerkbaar moeten
 worden). Er staan geen extra velden binnen lijstitems.
 
 ### Mogelijke CMS-verzoeken (`/admin/cms-verzoeken`)
+0. **`foto_alt` van artikelen in de lees-API v1.** De database heeft het veld, maar `/api/v1/collecties/artikelen`
+   en `pagina.records.artikelen` geven het niet door; artikelfoto's krijgen daarom nu een lege alt.
 1. **Actiebalk** als echt sitebloktype (velden `items[label, link, linktype]`, max. 3), zodat
    `weergave` niet nodig is en de redacteur het in `/admin` ziet.
 2. **Keuzehulp** als kernblok (situatie → instructie → route) — herbruikbaar voor andere praktijken.
@@ -47,6 +51,6 @@ worden). Er staan geen extra velden binnen lijstitems.
 Elk blok rendert in alle vijf (getest in `tests/blokken.test.mjs`).
 
 ## Kleuren en fonts
-De 12 CMS-kleursleutels staan in `design_tokens` (blauwdruk) en als `--cms-*` in `src/styles.css`.
+De 12 CMS-kleursleutels staan in de huisstijl van de site in het CMS (`design_tokens`) en als `--cms-*` in `src/styles.css`.
 Fonts lokaal als WOFF2 (Outfit 500/600 voor koppen, Instrument Sans 400/600 voor tekst; OFL-licentie,
 4 bestanden). Definitieve keuze nog door de designer te bevestigen.

@@ -1,28 +1,36 @@
-// Lokale preview van dist/ met dezelfde routeregels als op Vercel (redirects, nette URL's, 404).
+// Lokale server: dezelfde verwerking als de Vercel-functie, plus de statische bestanden uit dist/.
+//   npm run build && npm run serve            → actuele CMS-inhoud (met .env)
+//   npm run build:offline && npm run serve    → testdata
 import http from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { verwerk, maakInhoudsbron } from './lib/app.mjs'
+import { leesEnv, cmsConfig, siteUrl } from './lib/omgeving.mjs'
+import { leesCookies } from './lib/voorvertoning.mjs'
 
-const UIT = path.resolve('dist')
-const poort = Number(process.env.PORT) || 4321
-const config = JSON.parse(await readFile(path.join(UIT, '_routes.json'), 'utf8'))
-const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.woff2': 'font/woff2', '.xml': 'application/xml', '.txt': 'text/plain', '.json': 'application/json' }
+const env = leesEnv()
+const DIST = path.resolve('dist')
+const poort = Number(env.PORT) || 4321
+const momentopname = JSON.parse(await readFile(path.join(DIST, 'inhoud.json'), 'utf8'))
+const offline = momentopname.opgehaald === 'offline' || env.CMS_OFFLINE === '1'
+const cfg = offline ? null : cmsConfig(env)
+const bron = maakInhoudsbron({ cfg, momentopname })
+const opties = { bron, cfg, siteUrl: `http://localhost:${poort}`, cmsUrl: cfg?.cmsUrl ?? cmsConfig(env).cmsUrl }
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.woff2': 'font/woff2', '.txt': 'text/plain' }
 
-async function bestand(p) {
-  const vol = path.join(UIT, p)
-  if (!vol.startsWith(UIT)) return null
-  try { const s = await stat(vol); return s.isFile() ? vol : null } catch { return null }
-}
-
-http.createServer(async (req, res) => {
-  const pad = decodeURIComponent(new URL(req.url, 'http://x').pathname)
-  for (const r of config.routes) {
-    if (r.status && r.headers?.Location && new RegExp(r.src).test(pad)) {
-      res.writeHead(r.status, { Location: r.headers.Location }); return res.end()
+http
+  .createServer(async (req, res) => {
+    const url = new URL(req.url, 'http://localhost')
+    const pad = decodeURIComponent(url.pathname)
+    const vol = path.join(DIST, pad)
+    if (vol.startsWith(DIST) && pad !== '/' && pad !== '/inhoud.json' && (await stat(vol).catch(() => null))?.isFile()) {
+      res.writeHead(200, { 'content-type': TYPES[path.extname(vol)] || 'application/octet-stream' })
+      return res.end(await readFile(vol))
     }
-  }
-  const kandidaat = (await bestand(pad)) || (await bestand(path.join(pad, 'index.html')))
-  const doel = kandidaat || path.join(UIT, '404.html')
-  res.writeHead(kandidaat ? 200 : 404, { 'content-type': TYPES[path.extname(doel)] || 'application/octet-stream' })
-  res.end(await readFile(doel))
-}).listen(poort, () => console.log(`Preview: http://localhost:${poort}`))
+    const r = await verwerk({ pad, zoek: url.searchParams, cookies: leesCookies(req.headers.cookie) }, opties)
+    // Lokaal is er geen https: zonder Secure kan de browser de voorvertoningscookie bewaren.
+    if (r.headers['set-cookie']) r.headers['set-cookie'] = r.headers['set-cookie'].replace('; Secure', '')
+    res.writeHead(r.status, r.headers)
+    res.end(r.body)
+  })
+  .listen(poort, () => console.log(`Site: http://localhost:${poort}${offline ? ' (testdata)' : ' (CMS: ' + cfg.cmsUrl + ')'}`))
