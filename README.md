@@ -46,6 +46,38 @@ Geen dependencies; Node ≥ 22.
 "Adres voor Voorbeeld op de site": `https://tandartsenpraktijk-van-beek.vercel.app/__voorvertoning`
 (dat is ook het standaardadres op basis van het domein).
 
+De voorvertoning mag alleen door het CMS in een frame worden getoond (B-110): `/__voorvertoning` krijgt
+`frame-ancestors <origin van CMS_URL>` (standaard `https://cms.linkandlead.nl`), `noindex` en `no-store`; de
+rest van de site blijft `frame-ancestors 'none'` (`scripts/lib/beveiliging.mjs`).
+
+## Wat in het CMS te beheren is
+Alles behalve de vormgeving. Overzicht per onderdeel: [`docs/CMS-DEKKING.md`](docs/CMS-DEKKING.md); wat het
+CMS nog mist: [`docs/CMS-VERZOEKEN.md`](docs/CMS-VERZOEKEN.md).
+
+- **Site > Teksten**: vaste teksten buiten de blokken (Spoed-link, footer, formulierstappen, 404, lege standen,
+  kop van `/artikelen`). Sleutels en standaardteksten: `scripts/lib/teksten.mjs`. Aanmelden zodat het beheer
+  ze toont: `cms/teksten.json` via blokken:sync (`POST {CMS_URL}/api/v1/blokken/sync` met het **schrijftoken**;
+  eerst met `?droog=1`), of per sleutel met "Nieuwe plek".
+- **Site > Navigatie**: menu, footer, merk (ook slogan en socials), Standaard-SEO en Organisatie (JSON-LD).
+- **Huisstijl**: de 12 kleuren (`design_tokens`) overschrijven `--cms-*` in `src/styles.css`.
+
+## Deploy hook (CMS-wijzigingen automatisch in de build)
+Pagina's lezen het CMS al live (± 1–2 minuten). De build bewaart daarnaast een momentopname als terugval
+bij een CMS-storing; met een deploy hook bouwt Vercel na elke publicatie opnieuw, zodat ook die terugval
+actueel is.
+
+1. **Vercel**: project `tandartsenpraktijk-van-beek` → **Settings > Git > Deploy Hooks**. Naam bijvoorbeeld
+   "Link & Lead One", branch `main` → **Create Hook** en kopieer de URL
+   (`https://api.vercel.com/v1/integrations/deploy/…`). Behandel die als een wachtwoord: niet in git, chat of
+   tickets.
+2. **CMS**: site "Tandarts Van Beek" → **Instellingen** → paneel **Deploy-hook (headless frontend)** → plak de
+   URL → opslaan.
+3. Klik op **Nu testen**. In Vercel verschijnt een nieuwe deployment; in het CMS staat de aanroep met status
+   in de lijst eronder.
+
+Daarna start het CMS een build na elke (de)publicatie van een pagina, blok of record en na het opslaan van
+instellingen (teksten, navigatie, redirects). Mislukt een build, dan blijft de vorige deployment live.
+
 ## Artikelen
 
 - Overzicht `/artikelen`, detail `/artikelen/<slug>`, en het blok "Artikelen" (`artikelen_grid`) op elke

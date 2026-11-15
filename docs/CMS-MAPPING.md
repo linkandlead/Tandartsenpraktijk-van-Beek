@@ -37,6 +37,9 @@ velden"). Deze site gebruikt er alleen: `kaarten.weergave`, `kaarten.knop`, `kaa
 `/admin`; ze staan in de blokinhoud in het CMS en blijven bij bewerken behouden (een CMS-verzoek is nodig als ze bewerkbaar moeten
 worden). Er staan geen extra velden binnen lijstitems.
 
+Wat buiten de blokken uit het CMS komt (Site > Teksten, Standaard-SEO, Organisatie, huisstijl):
+[`CMS-DEKKING.md`](CMS-DEKKING.md). De volledige lijst open verzoeken: [`CMS-VERZOEKEN.md`](CMS-VERZOEKEN.md).
+
 ### Mogelijke CMS-verzoeken (`/admin/cms-verzoeken`)
 0. **`foto_alt` van artikelen in de lees-API v1.** De database heeft het veld, maar `/api/v1/collecties/artikelen`
    en `pagina.records.artikelen` geven het niet door; artikelfoto's krijgen daarom nu een lege alt.
