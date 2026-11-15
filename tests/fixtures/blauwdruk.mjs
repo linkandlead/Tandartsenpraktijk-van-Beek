@@ -1,9 +1,7 @@
-// Blauwdruk van de site Tandarts Van Beek voor het Link & Lead CMS (model A, headless).
-//
-// Dit bestand is de BRON die met `npm run cms:push` naar het CMS wordt gestuurd. Daarna is het CMS
-// leidend: redacteuren wijzigen teksten, beelden en links in /admin, en de frontend haalt bij elke
-// build de gepubliceerde versie op via /api/cms/content. Draai cms:push alleen opnieuw als je de
-// startinhoud bewust wilt terugzetten (de sync overschrijft de pagina's die hierin staan).
+// TESTDATA — niet de bron van de site. De inhoud staat in het Link & Lead One-CMS (site "Tandarts Van
+// Beek") en de site leest die via de lees-API v1. Dit is de startinhoud van 11 november, gebruikt voor
+// de tests en voor `npm run build:offline` (lokaal werken zonder token). Er wordt niets naar het CMS
+// gestuurd: er is bewust geen push- of sync-script (redacteuren werken in het CMS).
 //
 // Regels (CMS-handleiding + functioneel ontwerp 2.0):
 // - Alleen BESTAANDE kernbloktypen (zie docs/CMS-MAPPING.md). Geen verouderde of Link & Lead-blokken.

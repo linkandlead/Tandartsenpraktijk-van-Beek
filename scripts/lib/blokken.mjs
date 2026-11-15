@@ -6,6 +6,7 @@
 // Onbekende bloktypes renderen niets (veilige fallback) en worden bij de build gemeld.
 import { esc, attr, txt, lijst, veiligeHref, isExtern, t, knop, PIJL } from './html.mjs'
 import { rijkeTekst } from './rijk.mjs'
+import { artikelenGridBlok, sorteerArtikelenVoorBlok } from './artikelen.mjs'
 
 // CMS-achtergrondwaarde → schema (Licht, Zacht, Accent, Donker, Diepst).
 export const SCHEMA_VOOR_BG = { wit: 'licht', mist: 'zacht', limoenlicht: 'accent', diep: 'donker', nacht: 'diepst' }
@@ -167,6 +168,7 @@ function actiebalk(blok, ctx) {
   if (!items.length) return ''
   const label = txt(c.titel, 80) || 'Snel regelen'
   return `<nav${ctx.anker ? ` id="${attr(ctx.anker)}"` : ''} class="blok actiebalk schema-${schemaVoor(blok)}" data-blok="kaarten" aria-label="${attr(label)}">
+    ${txt(c.intro) ? `<p class="binnen actiebalk-intro">${t(c.intro, 200)}</p>` : ''}
     <ul class="binnen actiebalk-lijst">${items
       .map((i) => {
         const ext = isExtern(i.href) ? ' target="_blank" rel="noopener noreferrer"' : ''
@@ -546,6 +548,8 @@ export const RENDERERS = {
   formulier_bouwer: formulierBouwer,
   mensen,
   cta,
+  artikelen_grid: (blok, ctx) =>
+    artikelenGridBlok(blok.content, sorteerArtikelenVoorBlok(ctx), { id: `kop-${ctx.index}`, schema: schemaVoor(blok), anker: ctx.anker }),
 }
 
 export function renderBlok(blok, ctx) {
