@@ -50,6 +50,10 @@ export async function blauwdrukAlsInhoud(bestand = 'tests/fixtures/blauwdruk.mjs
       navigatie: { hoofd: m.hoofd_nav ?? [], footer: m.footer_kolommen ?? [], juridisch: m.juridische_links ?? [], actie: m.primaire_actie ?? null },
       design_tokens: bd.design_tokens ?? {},
       redirects: bd.redirects ?? [],
+      seo: { titel_suffix: '', beschrijving: '', social_beeld: '', noindex: false, google_verificatie: '', bing_verificatie: '' },
+      organisatie: null,
+      consent: { analytics: 'eigen' },
+      teksten: {},
     },
     paginas: (bd.paginas ?? []).map((p) => ({
       slug: p.slug,

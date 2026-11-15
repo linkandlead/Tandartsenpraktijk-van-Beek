@@ -15,6 +15,7 @@ import { mkdirSync, writeFileSync, cpSync, rmSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { laadAlles } from './lib/cms-v1.mjs'
 import { leesEnv, cmsConfig, siteUrl, blauwdrukAlsInhoud } from './lib/omgeving.mjs'
+import { headerRoutes } from './lib/beveiliging.mjs'
 
 const env = leesEnv()
 const cfg = cmsConfig(env)
@@ -53,31 +54,11 @@ writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow:
 writeFileSync(path.join(DIST, 'inhoud.json'), JSON.stringify(inhoud))
 
 // --- Vercel Build Output API v3
-const CSP = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${cfg.cmsUrl}`,
-  `connect-src 'self' ${cfg.cmsUrl}`,
-  "img-src 'self' data: https:",
-  "style-src 'self' 'unsafe-inline'",
-  "font-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join('; ')
+// Headers: overal frame-ancestors 'none', behalve /__voorvertoning (alleen het CMS mag die insluiten).
 const config = {
   version: 3,
   routes: [
-    {
-      src: '/(.*)',
-      headers: {
-        'Content-Security-Policy': CSP,
-        'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
-      },
-      continue: true,
-    },
+    ...headerRoutes(cfg.cmsUrl),
     { src: '^/(fonts|img)/(.*)$', headers: { 'Cache-Control': 'public, max-age=31536000, immutable' }, continue: true },
     { src: '^/inhoud\\.json$', status: 404 }, // de momentopname is alleen voor de functie
     { handle: 'filesystem' },

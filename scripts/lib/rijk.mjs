@@ -5,7 +5,8 @@ import { esc, markeerPlaceholders, isExtern } from './html.mjs'
 
 const VEILIGE_LINK = /^(https?:\/\/|mailto:|tel:|\/|#)/i
 
-function inline(tekst) {
+// Eén regel rijke tekst zonder <p> (voor korte teksten zoals de akkoordregel van een formulier).
+export function inline(tekst) {
   let uit = ''
   const patroon = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*/g
   let laatst = 0

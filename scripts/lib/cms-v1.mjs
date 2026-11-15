@@ -61,8 +61,18 @@ export function normaliseerPagina(p) {
   }
 }
 
+const TEKST_SLEUTEL = /^[a-z0-9][a-z0-9_.-]{0,79}$/
+
+// Site > Teksten: alleen geldige sleutels met een niet-lege tekst.
+function normaliseerTeksten(w) {
+  if (!isObj(w)) return {}
+  return Object.fromEntries(Object.entries(w).filter(([k, v]) => TEKST_SLEUTEL.test(k) && typeof v === 'string' && v.trim() && v.length <= 2000))
+}
+
 export function normaliseerSite(s) {
   if (!isObj(s) || s.versie !== 'v1' || !isObj(s.site)) return null
+  const seo = isObj(s.seo) ? s.seo : {}
+  const consent = isObj(s.consent) ? s.consent : {}
   return {
     id: str(s.site.id),
     naam: str(s.site.naam),
@@ -71,6 +81,20 @@ export function normaliseerSite(s) {
     navigatie: isObj(s.navigatie) ? s.navigatie : {},
     design_tokens: isObj(s.design_tokens) ? s.design_tokens : {},
     redirects: Array.isArray(s.redirects) ? s.redirects : [],
+    // Standaard-SEO van de site (Site > Navigatie > Standaard-SEO): terugval als een pagina zelf niets heeft.
+    seo: {
+      titel_suffix: str(seo.titel_suffix),
+      beschrijving: str(seo.beschrijving),
+      social_beeld: str(seo.social_beeld),
+      noindex: seo.noindex === true,
+      google_verificatie: str(seo.google_verificatie),
+      bing_verificatie: str(seo.bing_verificatie),
+    },
+    // Organisatie voor de JSON-LD (Site > Navigatie > Organisatie). null = niet meegegeven.
+    organisatie: isObj(s.organisatie) ? s.organisatie : null,
+    // Alleen `analytics: 'uit'` doet iets: dan wordt er niet gemeten (meet.js vervalt).
+    consent: { analytics: consent.analytics === 'uit' ? 'uit' : 'eigen' },
+    teksten: normaliseerTeksten(s.teksten),
   }
 }
 

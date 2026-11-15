@@ -2,6 +2,7 @@
 import { esc, attr, txt, veiligeHref, t, knop, PIJL } from './html.mjs'
 import { rijkeTekst } from './rijk.mjs'
 import { normaliseerArtikel, sorteerArtikelen } from './cms-v1.mjs'
+import { tekst } from './teksten.mjs'
 
 export const ARTIKEL_BASIS = '/artikelen'
 export const artikelPad = (a) => `${ARTIKEL_BASIS}/${a.slug}`
@@ -83,22 +84,22 @@ export function artikelKaarten(lijst, niveau = 3) {
 }
 
 // Sectie met het complete overzicht (onder de paginakop van /artikelen).
-export function overzichtSectie(artikelen) {
-  return `<section class="blok artikel-overzicht schema-licht" aria-label="Alle artikelen">
+export function overzichtSectie(artikelen, site = {}) {
+  return `<section class="blok artikel-overzicht schema-licht" aria-label="${attr(tekst(site, 'artikelen.alle'))}">
     <div class="binnen">
-      ${artikelen.length ? artikelKaarten(artikelen, 2) : '<p class="lege-stand">Er zijn nog geen artikelen gepubliceerd.</p>'}
+      ${artikelen.length ? artikelKaarten(artikelen, 2) : `<p class="lege-stand">${t(tekst(site, 'artikelen.leeg'), 300)}</p>`}
     </div>
   </section>`
 }
 
 // Inhoud van een artikelpagina (onder de paginakop met titel, rubriek en foto).
-export function detailSectie(a) {
+export function detailSectie(a, site = {}) {
   return `<article class="blok artikel schema-licht" aria-labelledby="kop-0">
     <div class="binnen smal">
       ${meta(a)}
-      ${a.antwoordblok ? `<aside class="artikel-antwoord" aria-label="Kort antwoord"><p class="eyebrow">Kort antwoord</p><p>${t(a.antwoordblok, 1000)}</p></aside>` : ''}
+      ${a.antwoordblok ? `<aside class="artikel-antwoord" aria-label="${attr(tekst(site, 'artikelen.kort_antwoord'))}"><p class="eyebrow">${esc(tekst(site, 'artikelen.kort_antwoord'))}</p><p>${t(a.antwoordblok, 1000)}</p></aside>` : ''}
       <div class="rijk artikel-tekst">${hoofdtekstHtml(a.hoofdtekst)}</div>
-      <p class="artikel-terug">${knop(ARTIKEL_BASIS, 'Alle artikelen', { klasse: 'tekstlink tekstlink-onderstreept' })}</p>
+      <p class="artikel-terug">${knop(ARTIKEL_BASIS, tekst(site, 'artikelen.alle'), { klasse: 'tekstlink tekstlink-onderstreept' })}</p>
     </div>
   </article>`
 }
@@ -122,16 +123,16 @@ export function detailKop(a) {
 }
 
 // Blok `artikelen_grid` (kernblok "Artikelen"): eyebrow, titel, maximaal.
-export function artikelenGridBlok(c, artikelen, { id, schema, anker }) {
+export function artikelenGridBlok(c, artikelen, { id, schema, anker, site = {} }) {
   const max = Math.min(24, Math.max(1, Number(c.maximaal) || 6))
   const lijst = artikelen.slice(0, max)
   return `<section${anker ? ` id="${attr(anker)}"` : ''} class="blok artikelen-blok schema-${schema}" data-blok="artikelen_grid"${txt(c.titel) ? ` aria-labelledby="${id}"` : ''}>
     <div class="binnen">
       <div class="sectie-kop sectie-kop-rij">
         <div>${txt(c.eyebrow) ? `<p class="eyebrow">${t(c.eyebrow, 120)}</p>` : ''}${txt(c.titel) ? `<h2 id="${id}">${t(c.titel, 300)}</h2>` : ''}</div>
-        <a class="tekstlink tekstlink-onderstreept" href="${ARTIKEL_BASIS}"><span>Alle artikelen</span>${PIJL}</a>
+        <a class="tekstlink tekstlink-onderstreept" href="${ARTIKEL_BASIS}"><span>${esc(tekst(site, 'artikelen.alle'))}</span>${PIJL}</a>
       </div>
-      ${lijst.length ? artikelKaarten(lijst) : '<p class="lege-stand">Er zijn nog geen artikelen gepubliceerd.</p>'}
+      ${lijst.length ? artikelKaarten(lijst) : `<p class="lege-stand">${t(tekst(site, 'artikelen.leeg'), 300)}</p>`}
     </div>
   </section>`
 }

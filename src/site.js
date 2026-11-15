@@ -122,7 +122,7 @@
 
     verstuur.addEventListener('click', function () {
       if (!window.LLCMS || !window.LLCMS.lead) {
-        verzendFout.textContent = 'Versturen is nu niet mogelijk. Probeer het later opnieuw of bel de praktijk.'
+        verzendFout.textContent = form.getAttribute('data-niet-beschikbaar') || 'Versturen is nu niet mogelijk. Probeer het later opnieuw of bel de praktijk.'
         verzendFout.hidden = false
         return
       }
@@ -157,7 +157,7 @@
           form.querySelector('[data-succes]').textContent = tekst
           toon('klaar')
         } else {
-          verzendFout.textContent = 'Uw bericht kon niet worden verzonden. Uw gegevens zijn bewaard; controleer ze en probeer het opnieuw, of bel de praktijk.'
+          verzendFout.textContent = form.getAttribute('data-fout-versturen') || 'Uw bericht kon niet worden verzonden. Uw gegevens zijn bewaard; controleer ze en probeer het opnieuw, of bel de praktijk.'
           verzendFout.hidden = false
           verzendFout.focus && verzendFout.setAttribute('tabindex', '-1')
           verzendFout.focus()
