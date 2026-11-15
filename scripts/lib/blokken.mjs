@@ -5,7 +5,8 @@
 // Alle velden zijn optioneel: een leeg veld laat het onderdeel weg, nooit een kapotte sectie.
 // Onbekende bloktypes renderen niets (veilige fallback) en worden bij de build gemeld.
 import { esc, attr, txt, lijst, veiligeHref, isExtern, t, knop, PIJL } from './html.mjs'
-import { rijkeTekst } from './rijk.mjs'
+import { rijkeTekst, inline } from './rijk.mjs'
+import { tekst } from './teksten.mjs'
 import { artikelenGridBlok, sorteerArtikelenVoorBlok } from './artikelen.mjs'
 
 // CMS-achtergrondwaarde → schema (Licht, Zacht, Accent, Donker, Diepst).
@@ -88,7 +89,7 @@ function tekstBlok(blok, ctx) {
       ${eyebrow(c.eyebrow)}
       ${kop(2, c.titel, id)}
       <div class="rijk">${rijkeTekst(txt(c.tekst, 20000))}</div>
-      ${nl ? `<p class="bijgewerkt">Laatst bijgewerkt: <time datetime="${datum}">${nl}</time></p>` : ''}
+      ${nl ? `<p class="bijgewerkt">${esc(tekst(ctx.site, 'tekstblok.bijgewerkt'))} <time datetime="${datum}">${nl}</time></p>` : ''}
     </div>`,
     { label: txt(c.titel) ? id : undefined },
   )
@@ -209,7 +210,7 @@ function collectie(blok, ctx) {
                 return `<li class="collectie-item">${h ? `<a class="collectie-kaart" href="${attr(h)}">${binnen}</a>` : `<div class="collectie-kaart">${binnen}</div>`}</li>`
               })
               .join('')}</ul>`
-          : `<p class="lege-stand">Er zijn op dit moment geen items om te tonen.</p>`
+          : `<p class="lege-stand">${t(tekst(ctx.site, 'collectie.leeg'), 500)}</p>`
       }
     </div>`,
     { label: txt(c.titel) ? id : undefined },
@@ -247,7 +248,7 @@ function keuzehulp(blok, ctx) {
     `<div class="binnen" data-keuzehulp>
       <div class="sectie-kop">${eyebrow(c.eyebrow)}${kop(2, c.titel, id)}${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}</div>
       <fieldset class="keuze-opties" hidden>
-        <legend>${t(txt(c.keuze_label) || 'Maak een keuze')}</legend>
+        <legend>${t(txt(c.keuze_label) || tekst(ctx.site, 'keuzehulp.kies'))}</legend>
         ${items
           .map(
             (i, n) => `<label class="keuze-optie"><input type="radio" name="${naam}" value="${n}"><span>${t(i.titel, 120)}</span></label>`,
@@ -426,17 +427,18 @@ function formulierBouwer(blok, ctx) {
     const auto = def.auto ?? autoVoor(label)
     const autoAttr = auto || autoVoor(label) ? ` autocomplete="${auto || autoVoor(label)}"` : ''
     const fout = `<p class="veld-fout" id="${vid}-fout" hidden></p>`
-    const lbl = `<label for="${vid}">${t(label)}${verplicht ? '' : ' <span class="optioneel">(optioneel)</span>'}</label>`
+    const lbl = `<label for="${vid}">${t(label)}${verplicht ? '' : ` <span class="optioneel">${esc(tekst(ctx.site, 'formulier.optioneel'))}</span>`}</label>`
     const desc = ` aria-describedby="${vid}-fout"`
     let invoer
     if (def.tag === 'textarea') invoer = `<textarea id="${vid}" name="${attr(naam)}" rows="6" maxlength="2000"${req}${desc}></textarea>`
     else if (def.tag === 'select') {
       const opties = txt(v.opties, 1000).split(',').map((o) => o.trim()).filter(Boolean)
-      invoer = `<select id="${vid}" name="${attr(naam)}"${req}${desc}><option value="">Maak een keuze</option>${opties.map((o) => `<option>${esc(o)}</option>`).join('')}</select>`
+      invoer = `<select id="${vid}" name="${attr(naam)}"${req}${desc}><option value="">${esc(tekst(ctx.site, 'formulier.kies'))}</option>${opties.map((o) => `<option>${esc(o)}</option>`).join('')}</select>`
     } else invoer = `<input id="${vid}" name="${attr(naam)}" type="${def.type}"${autoAttr} maxlength="200"${req}${desc}>`
     return `<div class="veld${def.tag === 'textarea' ? ' veld-breed' : ''}" data-label="${attr(label)}">${lbl}${invoer}${fout}</div>`
   }
-  const emailVeld = `<div class="veld" data-label="E-mailadres"><label for="${fid}-email">E-mailadres</label><input id="${fid}-email" name="email" type="email" autocomplete="email" maxlength="200" required aria-required="true" aria-describedby="${fid}-email-fout"><p class="veld-fout" id="${fid}-email-fout" hidden></p></div>`
+  const emailLabel = tekst(ctx.site, 'formulier.email')
+  const emailVeld = `<div class="veld" data-label="${attr(emailLabel)}"><label for="${fid}-email">${esc(emailLabel)}</label><input id="${fid}-email" name="email" type="email" autocomplete="email" maxlength="200" required aria-required="true" aria-describedby="${fid}-email-fout"><p class="veld-fout" id="${fid}-email-fout" hidden></p></div>`
   const alle = velden.map(veldHtml)
   alle.splice(Math.min(2, alle.length), 0, emailVeld) // e-mail na voor- en achternaam
   const bevestiging = txt(c.bevestigingstekst) || 'Bedankt voor uw bericht. Wij nemen zo snel mogelijk contact met u op.'
@@ -448,31 +450,31 @@ function formulierBouwer(blok, ctx) {
       ${eyebrow(c.eyebrow)}
       ${kop(2, c.titel, id)}
       ${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}
-      <form class="ll-formulier" id="${fid}" novalidate data-formulier data-herkomst="${attr(ctx.slug)}" data-bevestiging="${attr(bevestiging)}">
+      <form class="ll-formulier" id="${fid}" novalidate data-formulier data-herkomst="${attr(ctx.slug)}" data-bevestiging="${attr(bevestiging)}" data-niet-beschikbaar="${attr(tekst(ctx.site, 'formulier.niet_beschikbaar'))}" data-fout-versturen="${attr(tekst(ctx.site, 'formulier.fout_versturen'))}">
         <div class="formulier-stap" data-stap="invullen">
           <p class="formulier-melding fout" role="alert" hidden data-foutsamenvatting></p>
           <div class="velden">${alle.join('')}</div>
           <div class="veld veld-breed veld-akkoord">
-            <label class="vinkje"><input type="checkbox" name="akkoord" required aria-required="true" aria-describedby="${fid}-akkoord-fout"><span>Ik ga akkoord met de verwerking van mijn gegevens volgens de <a href="/privacyverklaring">privacyverklaring</a>.</span></label>
+            <label class="vinkje"><input type="checkbox" name="akkoord" required aria-required="true" aria-describedby="${fid}-akkoord-fout"><span>${inline(tekst(ctx.site, 'formulier.akkoord'))}</span></label>
             <p class="veld-fout" id="${fid}-akkoord-fout" hidden></p>
           </div>
           <div class="hp" aria-hidden="true"><label>Laat dit veld leeg<input type="text" name="_website" tabindex="-1" autocomplete="off"></label></div>
           <div class="knoppen"><button type="submit" class="knop">${esc(txt(c.knoptekst) || 'Controleren en versturen')}${PIJL}</button></div>
         </div>
         <div class="formulier-stap" data-stap="controleren" hidden>
-          <h3 tabindex="-1">Controleer uw gegevens</h3>
+          <h3 tabindex="-1">${esc(tekst(ctx.site, 'formulier.controleren_kop'))}</h3>
           <dl class="feiten-lijst compact" data-samenvatting></dl>
           <p class="formulier-melding fout" role="alert" hidden data-verzendfout></p>
           <div class="knoppen">
-            <button type="button" class="knop" data-verstuur>Bericht versturen${PIJL}</button>
-            <button type="button" class="knop knop-secundair" data-terug>Gegevens aanpassen</button>
+            <button type="button" class="knop" data-verstuur>${esc(tekst(ctx.site, 'formulier.versturen'))}${PIJL}</button>
+            <button type="button" class="knop knop-secundair" data-terug>${esc(tekst(ctx.site, 'formulier.aanpassen'))}</button>
           </div>
         </div>
         <div class="formulier-stap" data-stap="klaar" hidden>
-          <h3 tabindex="-1">Bericht verstuurd</h3>
+          <h3 tabindex="-1">${esc(tekst(ctx.site, 'formulier.verstuurd_kop'))}</h3>
           <p class="formulier-melding succes" role="status" data-succes></p>
         </div>
-        <noscript><p class="formulier-melding fout">Voor dit formulier is JavaScript nodig. U kunt ons ook bellen.</p></noscript>
+        <noscript><p class="formulier-melding fout">${t(tekst(ctx.site, 'formulier.noscript'), 300)}</p></noscript>
       </form>
       ${txt(c.voetnoot) ? `<p class="voetnoot">${t(c.voetnoot)}</p>` : ''}
     </div>`,
@@ -502,7 +504,7 @@ function mensen(blok, ctx) {
                 </li>`,
               )
               .join('')}</ul>`
-          : `<p class="lege-stand">Het teamoverzicht wordt binnenkort aangevuld. <mark class="placeholder">[te bevestigen: actuele medewerkers, functies en portretfoto's in het CMS]</mark></p>`
+          : `<p class="lege-stand">${t(tekst(ctx.site, 'team.leeg'), 1000)}</p>`
       }
     </div>
   </section>`
@@ -549,7 +551,7 @@ export const RENDERERS = {
   mensen,
   cta,
   artikelen_grid: (blok, ctx) =>
-    artikelenGridBlok(blok.content, sorteerArtikelenVoorBlok(ctx), { id: `kop-${ctx.index}`, schema: schemaVoor(blok), anker: ctx.anker }),
+    artikelenGridBlok(blok.content, sorteerArtikelenVoorBlok(ctx), { id: `kop-${ctx.index}`, schema: schemaVoor(blok), anker: ctx.anker, site: ctx.site }),
 }
 
 export function renderBlok(blok, ctx) {

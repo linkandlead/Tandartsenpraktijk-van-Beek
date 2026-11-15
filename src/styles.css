@@ -340,6 +340,7 @@ a.collectie-kaart:focus-visible { outline-offset: 4px; }
 .footer-onder ul { display: flex; gap: 20px; }
 @media (max-width: 860px) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-merk { grid-column: 1 / -1; } }
 @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+.footer-socials { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px !important; } /* alleen als het CMS socials heeft */
 
 
 /* ---------- Actiebalk: optionele intro uit het CMS ---------- */
