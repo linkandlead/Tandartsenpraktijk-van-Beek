@@ -139,8 +139,11 @@ export function sitemapXml(inhoud, siteUrl) {
     .join('\n')}\n</urlset>\n`
 }
 
+// SameSite=None + Partitioned: de voorvertoning staat in een frame op cms.linkandlead.nl (B-110). Een Lax-cookie
+// gaat in zo'n frame niet mee, waardoor doorklikken het concept kwijtraakte. Partitioned houdt het cookie bij die
+// insluitende site (CHIPS); Path blijft /__voorvertoning, dus de gewone site ziet het nooit.
 function cookieKop(waarde, maxAge) {
-  return `${VOORVERTONING_COOKIE}=${waarde}; Path=/__voorvertoning; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`
+  return `${VOORVERTONING_COOKIE}=${waarde}; Path=/__voorvertoning; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${maxAge}`
 }
 
 // ------------------------------------------------------------------ het verzoek

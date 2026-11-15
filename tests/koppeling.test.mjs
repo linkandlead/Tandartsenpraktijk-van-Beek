@@ -158,7 +158,7 @@ test('voorvertoning: geldig token toont het concept met balk, privé en noindex'
   assert.equal(r.headers['cache-control'], 'private, no-store')
   assert.equal(r.headers['x-robots-tag'], 'noindex, nofollow')
   assert.match(r.body, /<meta name="robots" content="noindex/)
-  assert.match(r.headers['set-cookie'], /HttpOnly; Secure; SameSite=Lax/)
+  assert.match(r.headers['set-cookie'], /HttpOnly; Secure; SameSite=None; Partitioned/)
   assert.match(r.body, /href="\/__voorvertoning\?pad=%2Fcontact"/, 'doorklikken blijft in het voorbeeld')
   assert.doesNotMatch(r.body, /meet\.js/, 'voorbeelden tellen niet mee in de statistieken')
 })
