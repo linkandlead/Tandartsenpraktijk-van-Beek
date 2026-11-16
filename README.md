@@ -52,8 +52,14 @@ Tot dan toont het editorvenster de standaardopmaak; het echte ontwerp zie je via
 **Klik-om-te-bewerken (CMS B-115).** Alleen bij `&ingesloten=1` krijgt elke sectie `data-cms-sectie="<blok.id>"` en elk
 getoond tekstveld `data-cms-veld="<pad>"` (bv. `heading`, `items.1.titel`, `vragen.0.vraag`), en staat er een klein
 inline script in de pagina dat een klik daarop met postMessage alleen naar de origin van `CMS_URL` meldt en dan geen
-link volgt. De helpers zijn overgenomen uit site-kit 1.20.0 (`scripts/lib/voorvertoningklikken.mjs`; deze repo heeft
-geen dependencies). Gewone pagina's en de voorvertoning in een eigen tabblad blijven ongewijzigd
+link volgt. De helpers zijn overgenomen uit site-kit 1.21.0 (`scripts/lib/voorvertoningklikken.mjs`; deze repo heeft
+geen dependencies).
+
+**Typen in het echte ontwerp (CMS B-127, site-kit 1.21).** Het script meldt zich met `klaar`; een klik op een veld met
+alleen platte tekst meldt `typbaar`. Antwoordt de editor met een selectie, dan wordt dat element bewerkbaar en gaat
+elke wijziging als `tekst`-bericht naar het CMS (Enter: klaar, Escape: terugzetten). De tekstvelden van de blokken gaan
+als `velden` mee, zodat ook teksten die de renderer niet zelf markeert in de browser `data-cms-veld` krijgen. Links
+buiten een sectie (menu, voet) openen in het editorvenster geen andere pagina. Gewone pagina's en de voorvertoning in een eigen tabblad blijven ongewijzigd
 (`tests/klikken.test.mjs`). Geen CSP-wijziging: `script-src` staat `'unsafe-inline'` al toe.
 
 ## Siteregister

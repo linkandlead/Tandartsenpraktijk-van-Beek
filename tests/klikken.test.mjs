@@ -74,7 +74,9 @@ test('klikken: in de editor (ingesloten=1) per blok data-cms-sectie en per tekst
   assert.ok(r.body.includes(`data-cms-sectie="${CTA}" data-cms-veld="knoptekst"`))
   // het script meldt alleen naar de origin van het CMS
   assert.match(r.body, /<script>\(function voorvertoningKlikken/)
-  assert.ok(r.body.includes('{"cmsUrl":"https://cms.test","ingesloten":true}'))
+  assert.ok(r.body.includes('{"cmsUrl":"https://cms.test","ingesloten":true,"velden":{'))
+  // B-127: de tekstvelden gaan mee, zodat ook velden die de renderer niet zelf markeert typbaar worden
+  assert.ok(r.body.includes(`"${HEADER}":[{"pad":["eyebrow"],"waarde":"Welkom"}`))
   assert.doesNotMatch(r.body, /postMessage\([^)]*'\*'/)
   // doorklikken in het editorvenster (cookie, &ingesloten=1 in de links) blijft klikbaar
   assert.match(r.body, /href="\/__voorvertoning\?pad=%2Fcontact&amp;ingesloten=1"/)
@@ -90,15 +92,27 @@ test('klikken: zonder geldig blok-id (uuid) geen attributen; buiten de editor ge
   assert.equal(klikMaker(HEADER, true)(['items', 0, 'titel']), ` data-cms-sectie="${HEADER}" data-cms-veld="items.0.titel"`)
   assert.deepEqual(klikAttributen(HEADER), { 'data-cms-sectie': HEADER })
   assert.equal(klikScript('http://cms.test'), '', 'alleen https (of localhost)')
+  // inhoud kan het script niet afsluiten
+  const script = klikScript(CMS, [{ id: HEADER, content: { titel: '</script><script>alert(1)</script>' }, type: 'tekst' }])
+  assert.equal(script.match(/<\/script>/g).length, 1)
   assert.equal(klikScript('geen url'), '')
 })
 
 // Een nepvenster in een iframe: document met klikluisteraar, parent met postMessage
-function venster(search, { inIframe = true } = {}) {
-  const berichten = [], luisteraars = []
-  const v = { location: { search }, document: { addEventListener: (t, f) => luisteraars.push(f), removeEventListener: (t, f) => luisteraars.splice(luisteraars.indexOf(f), 1) } }
+function venster(search, { inIframe = true, velden = [] } = {}) {
+  const berichten = [], luisteraars = [], berichtLuisteraars = []
+  const v = {
+    location: { search },
+    document: {
+      addEventListener: (t, f) => luisteraars.push(f),
+      removeEventListener: (t, f) => luisteraars.splice(luisteraars.indexOf(f), 1),
+      querySelectorAll: () => velden,
+    },
+    addEventListener: (t, f) => berichtLuisteraars.push(f),
+    removeEventListener: (t, f) => berichtLuisteraars.splice(berichtLuisteraars.indexOf(f), 1),
+  }
   v.parent = inIframe ? { postMessage: (b, doel) => berichten.push({ b, doel }) } : v
-  return { v, berichten, luisteraars }
+  return { v, berichten, luisteraars, berichtLuisteraars }
 }
 const element = (attrs, ouder = null) => ({
   getAttribute: (n) => attrs[n] ?? null,
@@ -114,13 +128,20 @@ test('klikscript: een klik meldt blok en veld alleen aan de CMS-origin en volgt 
   new Function('window', code)(v)
   assert.equal(luisteraars.length, 1)
   const e = klik(element({ 'data-cms-sectie': FAQ, 'data-cms-veld': 'vragen.0.vraag' }, element({ 'data-cms-sectie': FAQ })))
+  // de pagina meldt zich eerst als klaar (B-127)
+  assert.deepEqual(berichten.shift(), { doel: 'https://cms.test', b: { bron: 'cms-voorbeeld', soort: 'klaar' } })
   luisteraars[0](e)
   assert.equal(e.gevolgd, false, 'de link wordt niet gevolgd')
   assert.deepEqual(berichten, [{ doel: 'https://cms.test', b: { bron: 'cms-voorbeeld', soort: 'kies', sectieId: FAQ, pad: ['vragen', 0, 'vraag'], item: null, typbaar: false } }])
-  // buiten een gemarkeerde sectie (menu, footer): gewoon de link volgen, geen bericht
+  // buiten een gemarkeerde sectie, geen link: niets volgen of melden
   const buiten = klik(element({}))
   luisteraars[0](buiten)
   assert.equal(buiten.gevolgd, true)
+  assert.equal(berichten.length, 1)
+  // een link buiten een sectie (menu, footer) opent in het editorvenster geen andere pagina
+  const menu = klik({ getAttribute: () => null, closest(sel) { return sel === 'a[href]' ? this : null } })
+  luisteraars[0](menu)
+  assert.equal(menu.gevolgd, false)
   assert.equal(berichten.length, 1)
 })
 
@@ -130,4 +151,41 @@ test('voorvertoningKlikken: niets zonder ingesloten, buiten een iframe of met ee
     voorvertoningKlikken({ cmsUrl, venster: v })
     assert.equal(luisteraars.length, 0, `${search} ${cmsUrl}`)
   }
+})
+
+// Een tekstelement zonder kind-elementen, dat bewerkbaar kan worden
+function tekstElement(attrs, tekst, sectie) {
+  const l = {}
+  return {
+    ...element(attrs, sectie),
+    textContent: tekst,
+    childElementCount: 0,
+    contentEditable: 'inherit',
+    addEventListener: (t, f) => { l[t] = f },
+    removeEventListener: (t) => { delete l[t] },
+    focus() {},
+    luister: l,
+  }
+}
+
+test('typen (B-127): typbaar veld, selectie van de editor maakt het bewerkbaar en stuurt tekst; Escape zet terug', () => {
+  const sectie = element({ 'data-cms-sectie': FAQ })
+  const veld = tekstElement({ 'data-cms-veld': 'vragen.0.vraag' }, 'Waarom?', sectie)
+  const { v, berichten, luisteraars, berichtLuisteraars } = venster('?ingesloten=1', { velden: [veld] })
+  voorvertoningKlikken({ cmsUrl: CMS, venster: v })
+  berichten.shift()
+  luisteraars[0](klik(veld))
+  assert.equal(berichten.shift().b.typbaar, true)
+  // een bericht van een andere origin telt niet
+  berichtLuisteraars[0]({ origin: 'https://kwaad.test', data: { bron: 'cms-editor', soort: 'selectie', geselecteerd: FAQ, pad: ['vragen', 0, 'vraag'], typen: 1 } })
+  assert.equal(veld.contentEditable, 'inherit')
+  berichtLuisteraars[0]({ origin: CMS, data: { bron: 'cms-editor', soort: 'selectie', geselecteerd: FAQ, pad: ['vragen', 0, 'vraag'], typen: 1 } })
+  assert.match(veld.contentEditable, /^(plaintext-only|true)$/)
+  veld.textContent = 'Waarom\nnu?'
+  veld.luister.input()
+  assert.deepEqual(berichten.shift(), { doel: CMS, b: { bron: 'cms-voorbeeld', soort: 'tekst', sectieId: FAQ, pad: ['vragen', 0, 'vraag'], waarde: 'Waarom nu?', typen: 1 } })
+  veld.luister.keydown({ key: 'Escape', preventDefault() {} })
+  assert.equal(veld.textContent, 'Waarom?')
+  assert.equal(berichten.shift().b.waarde, 'Waarom?')
+  assert.equal(veld.contentEditable, 'false')
 })
