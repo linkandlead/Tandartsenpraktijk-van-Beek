@@ -2,6 +2,7 @@
 import { esc, attr, txt, veiligeHref } from './html.mjs'
 import { renderBlok, RENDERERS } from './blokken.mjs'
 import { siteHeader, siteFooter, kruimelpad, head } from './schil.mjs'
+import { klikScript } from './voorvertoningklikken.mjs'
 
 const ANKERS = { formulier_bouwer: 'bericht', mensen: 'team', kaart: 'route', artikelen_grid: 'artikelen' }
 
@@ -27,6 +28,8 @@ export function renderPagina(
   { site, titels = new Map(), siteUrl, cmsUrl, artikelen = [], meldingen = [], noindex = false, extraSecties = [], jsonld = null, voorvertoning = null },
 ) {
   const isHome = p.slug === '/'
+  // Klik-om-te-bewerken (CMS B-115): alleen in de voorvertoning in de CMS-editor (&ingesloten=1), nooit voor bezoekers
+  const klikken = voorvertoning?.ingesloten === true
   const kruimel = kruimelpad(p.slug, titels)
   let headerGezien = false
   let heeftFormulier = false
@@ -44,7 +47,7 @@ export function renderPagina(
       if (blok.type === 'kaarten' && blok.content?.weergave === 'keuzehulp') anker = 'keuzehulp'
       if (anker && gebruikteAnkers.has(anker)) anker = undefined
       if (anker) gebruikteAnkers.add(anker)
-      return renderBlok(blok, { index, isEersteHeader, isHome, kruimelpad: kruimel, paginaTitel: p.titel, records: p.records ?? {}, artikelen, slug: p.slug, anker })
+      return renderBlok(blok, { index, isEersteHeader, isHome, kruimelpad: kruimel, paginaTitel: p.titel, records: p.records ?? {}, artikelen, slug: p.slug, anker, klikken })
     })
     .filter(Boolean)
   secties.push(...extraSecties)
@@ -88,6 +91,8 @@ ${secties.join('\n')}
 </main>
 ${siteFooter(site)}`
   if (voorvertoning) body = (voorvertoning.ingesloten ? '' : voorvertoningsBalk(voorvertoning.pad) + '\n') + voorvertoningsLinks(body, voorvertoning)
+  // In de editor: een klik op een gemarkeerd onderdeel kiest het blok in het CMS (postMessage alleen naar CMS_URL)
+  if (klikken) body += '\n' + klikScript(cmsUrl)
 
   return `<!doctype html>
 <html lang="nl">

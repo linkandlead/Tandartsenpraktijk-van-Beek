@@ -41,8 +41,9 @@ async function haal(cfg, pad, { cache = true } = {}) {
 
 // ------------------------------------------------------------------ normaliseren
 
+// id: het id van het blok (alleen gebruikt in de voorvertoning in de CMS-editor, voor klik-om-te-bewerken).
 function normaliseerBlok(b) {
-  return { type: str(b.type), bg: typeof b.bg === 'string' ? b.bg : null, content: isObj(b.inhoud) ? b.inhoud : {} }
+  return { ...(typeof b.id === 'string' && b.id ? { id: b.id } : {}), type: str(b.type), bg: typeof b.bg === 'string' ? b.bg : null, content: isObj(b.inhoud) ? b.inhoud : {} }
 }
 
 export function normaliseerPagina(p) {

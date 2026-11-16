@@ -49,6 +49,13 @@ voorbeeldcookie is `SameSite=None; Partitioned`, zodat doorklikken ook in het ed
 het insluiten nog bouwen: CMS-verzoek "Editorvoorbeeld in het echte ontwerp van een eigen frontend (model A)".
 Tot dan toont het editorvenster de standaardopmaak; het echte ontwerp zie je via "Voorbeeld op de site".
 
+**Klik-om-te-bewerken (CMS B-115).** Alleen bij `&ingesloten=1` krijgt elke sectie `data-cms-sectie="<blok.id>"` en elk
+getoond tekstveld `data-cms-veld="<pad>"` (bv. `heading`, `items.1.titel`, `vragen.0.vraag`), en staat er een klein
+inline script in de pagina dat een klik daarop met postMessage alleen naar de origin van `CMS_URL` meldt en dan geen
+link volgt. De helpers zijn overgenomen uit site-kit 1.20.0 (`scripts/lib/voorvertoningklikken.mjs`; deze repo heeft
+geen dependencies). Gewone pagina's en de voorvertoning in een eigen tabblad blijven ongewijzigd
+(`tests/klikken.test.mjs`). Geen CSP-wijziging: `script-src` staat `'unsafe-inline'` al toe.
+
 ## Siteregister
 
 "Adres voor Voorbeeld op de site": `https://tandartsenpraktijk-van-beek.vercel.app/__voorvertoning`
