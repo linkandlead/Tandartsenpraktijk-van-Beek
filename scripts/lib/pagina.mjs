@@ -78,8 +78,9 @@ ${secties.join('\n')}
 </main>
 ${siteFooter(site)}`
   if (voorvertoning) body = (voorvertoning.ingesloten ? '' : voorvertoningsBalk(voorvertoning.pad) + '\n') + voorvertoningsLinks(body, voorvertoning)
-  // In de editor: een klik op een gemarkeerd onderdeel kiest het blok in het CMS (postMessage alleen naar CMS_URL)
-  if (klikken) body += '\n' + klikScript(cmsUrl)
+  // In de editor: een klik op een gemarkeerd onderdeel kiest het blok in het CMS en platte tekst is daar direct te
+  // typen (B-127; postMessage alleen naar de origin van CMS_URL)
+  if (klikken) body += '\n' + klikScript(cmsUrl, p.blokken)
 
   return `<!doctype html>
 <html lang="nl">
