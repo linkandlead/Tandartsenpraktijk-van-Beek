@@ -8,6 +8,7 @@ import { esc, attr, txt, lijst, veiligeHref, isExtern, t, knop, PIJL } from './h
 import { rijkeTekst, inline } from './rijk.mjs'
 import { tekst } from './teksten.mjs'
 import { artikelenGridBlok, sorteerArtikelenVoorBlok } from './artikelen.mjs'
+import { klikMaker } from './voorvertoningklikken.mjs'
 
 // CMS-achtergrondwaarde → schema (Licht, Zacht, Accent, Donker, Diepst).
 export const SCHEMA_VOOR_BG = { wit: 'licht', mist: 'zacht', limoenlicht: 'accent', diep: 'donker', nacht: 'diepst' }
@@ -21,18 +22,24 @@ export function schemaVoor(blok) {
 function sectie(blok, ctx, klasse, binnen, { label } = {}) {
   const id = ctx.anker ? ` id="${attr(ctx.anker)}"` : ''
   const aria = label ? ` aria-labelledby="${attr(label)}"` : ''
-  return `<section${id} class="blok ${klasse} schema-${schemaVoor(blok)}" data-blok="${attr(blok.type)}"${aria}>\n${binnen}\n</section>`
+  return `<section${id} class="blok ${klasse} schema-${schemaVoor(blok)}" data-blok="${attr(blok.type)}"${aria}${ctx.k()}>\n${binnen}\n</section>`
 }
 
-function kop(niveau, tekst, id, klasse = '') {
+// extra: de attributen voor klik-om-te-bewerken (ctx.k('veld')); buiten de ingesloten voorvertoning altijd ''.
+function kop(niveau, tekst, id, klasse = '', extra = '') {
   const s = txt(tekst, 1000)
   if (!s) return ''
-  return `<h${niveau}${id ? ` id="${attr(id)}"` : ''}${klasse ? ` class="${klasse}"` : ''}>${t(s)}</h${niveau}>`
+  return `<h${niveau}${id ? ` id="${attr(id)}"` : ''}${klasse ? ` class="${klasse}"` : ''}${extra}>${t(s)}</h${niveau}>`
 }
 
-function eyebrow(v) {
+function eyebrow(v, extra = '') {
   const s = txt(v, 120)
-  return s ? `<p class="eyebrow">${t(s)}</p>` : ''
+  return s ? `<p class="eyebrow"${extra}>${t(s)}</p>` : ''
+}
+
+// De klik-attributen in de eerste tag van een stuk HTML (bv. een knop uit knop()); zonder attributen ongewijzigd.
+function metKlik(html, extra) {
+  return html && extra ? html.replace(/^<([a-z0-9]+)/, `<$1${extra}`) : html
 }
 
 function beeld(src, alt, { klasse = '', laden = 'lazy', prioriteit = false } = {}) {
@@ -52,16 +59,16 @@ function header(blok, ctx) {
   const fx = Number.isFinite(Number(c.focal_x)) ? Math.min(100, Math.max(0, Number(c.focal_x))) : 50
   const fy = Number.isFinite(Number(c.focal_y)) ? Math.min(100, Math.max(0, Number(c.focal_y))) : 50
   const kruimel = ctx.kruimelpad && c.auto_kruimelpad !== 'uit' && !ctx.isHome ? ctx.kruimelpad : ''
-  const knoppen = [knop(c.cta_primair_link, c.cta_primair_label, { klasse: 'knop knop-groot' }), knop(c.cta_secundair_link, c.cta_secundair_label, { klasse: 'knop knop-secundair' })].filter(Boolean)
-  const usps = lijst(c.usps, 6).map((u) => txt(u.tekst, 120)).filter(Boolean)
+  const knoppen = [metKlik(knop(c.cta_primair_link, c.cta_primair_label, { klasse: 'knop knop-groot' }), ctx.k('cta_primair_label')), metKlik(knop(c.cta_secundair_link, c.cta_secundair_label, { klasse: 'knop knop-secundair' }), ctx.k('cta_secundair_label'))].filter(Boolean)
+  const usps = lijst(c.usps, 6).map((u) => ({ tekst: txt(u.tekst, 120), klik: ctx.ki('usps', u, 'tekst') })).filter((u) => u.tekst)
   const tekst = `
   <div class="hero-tekst">
     ${kruimel}
-    ${eyebrow(c.eyebrow)}
-    ${kop(niveau, c.heading || ctx.paginaTitel, id, 'hero-kop')}
-    ${txt(c.subheading) ? `<p class="hero-sub">${t(c.subheading, 600)}</p>` : ''}
+    ${eyebrow(c.eyebrow, ctx.k('eyebrow'))}
+    ${kop(niveau, c.heading || ctx.paginaTitel, id, 'hero-kop', txt(c.heading) ? ctx.k('heading') : '')}
+    ${txt(c.subheading) ? `<p class="hero-sub"${ctx.k('subheading')}>${t(c.subheading, 600)}</p>` : ''}
     ${knoppen.length ? `<div class="knoppen">${knoppen.join('')}</div>` : ''}
-    ${usps.length ? `<ul class="hero-usps">${usps.map((u) => `<li>${t(u)}</li>`).join('')}</ul>` : ''}
+    ${usps.length ? `<ul class="hero-usps">${usps.map((u) => `<li${u.klik}>${t(u.tekst)}</li>`).join('')}</ul>` : ''}
   </div>`
   const media = metBeeld
     ? `<div class="hero-media" style="--fx:${fx}%;--fy:${fy}%">${beeld(c.media_afbeelding, c.media_alt, { laden: 'eager', prioriteit: niveau === 1 })}</div>`
@@ -86,9 +93,9 @@ function tekstBlok(blok, ctx) {
     ctx,
     'tekstblok',
     `<div class="binnen smal">
-      ${eyebrow(c.eyebrow)}
-      ${kop(2, c.titel, id)}
-      <div class="rijk">${rijkeTekst(txt(c.tekst, 20000))}</div>
+      ${eyebrow(c.eyebrow, ctx.k('eyebrow'))}
+      ${kop(2, c.titel, id, '', ctx.k('titel'))}
+      <div class="rijk"${ctx.k('tekst')}>${rijkeTekst(txt(c.tekst, 20000))}</div>
       ${nl ? `<p class="bijgewerkt">${esc(tekst(ctx.site, 'tekstblok.bijgewerkt'))} <time datetime="${datum}">${nl}</time></p>` : ''}
     </div>`,
     { label: txt(c.titel) ? id : undefined },
@@ -101,8 +108,8 @@ function mediatekst(blok, ctx) {
   const id = `kop-${ctx.index}`
   const zijde = c.beeldzijde === 'rechts' ? 'rechts' : 'links'
   const vorm = c.beeldvorm === 'organisch' ? 'organisch' : 'recht'
-  const alineas = lijst(c.alineas, 20).map((a) => txt(a.tekst, 4000)).filter(Boolean)
-  const punten = lijst(c.punten, 20).map((a) => txt(a.tekst, 300)).filter(Boolean)
+  const alineas = lijst(c.alineas, 20).map((a) => ({ tekst: txt(a.tekst, 4000), klik: ctx.ki('alineas', a, 'tekst') })).filter((a) => a.tekst)
+  const punten = lijst(c.punten, 20).map((a) => ({ tekst: txt(a.tekst, 300), klik: ctx.ki('punten', a, 'tekst') })).filter((a) => a.tekst)
   const img = beeld(c.beeld, c.beeld_alt)
   return sectie(
     blok,
@@ -111,11 +118,11 @@ function mediatekst(blok, ctx) {
     `<div class="binnen mediatekst-grid">
       ${img ? `<div class="mediatekst-beeld">${img}</div>` : ''}
       <div class="mediatekst-tekst">
-        ${eyebrow(c.eyebrow)}
-        ${kop(2, c.titel, id)}
-        ${alineas.map((a) => `<p>${t(a)}</p>`).join('')}
-        ${punten.length ? `<ul class="punten">${punten.map((p) => `<li>${t(p)}</li>`).join('')}</ul>` : ''}
-        ${knop(c.knop, c.knoptekst) ? `<div class="knoppen">${knop(c.knop, c.knoptekst)}</div>` : ''}
+        ${eyebrow(c.eyebrow, ctx.k('eyebrow'))}
+        ${kop(2, c.titel, id, '', ctx.k('titel'))}
+        ${alineas.map((a) => `<p${a.klik}>${t(a.tekst)}</p>`).join('')}
+        ${punten.length ? `<ul class="punten">${punten.map((p) => `<li${p.klik}>${t(p.tekst)}</li>`).join('')}</ul>` : ''}
+        ${knop(c.knop, c.knoptekst) ? `<div class="knoppen">${metKlik(knop(c.knop, c.knoptekst), ctx.k('knoptekst'))}</div>` : ''}
       </div>
     </div>`,
     { label: txt(c.titel) ? id : undefined },
@@ -144,15 +151,15 @@ function kaarten(blok, ctx) {
     ctx,
     'kaarten',
     `<div class="binnen">
-      <div class="sectie-kop">${eyebrow(c.eyebrow)}${kop(2, c.titel, id)}${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}</div>
+      <div class="sectie-kop">${eyebrow(c.eyebrow, ctx.k('eyebrow'))}${kop(2, c.titel, id, '', ctx.k('titel'))}${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}</div>
       ${items.length ? `<ul class="kaart-raster kol-${kol}">${items
         .map((i) => {
           const h = veiligeHref(i.link)
           return `<li class="tekstkaart">
             ${beeld(i.beeld, i.beeld_alt, { klasse: 'tekstkaart-beeld' })}
-            ${kop(3, i.titel)}
-            ${txt(i.tekst) ? `<p>${t(i.tekst)}</p>` : ''}
-            ${h ? knop(h, txt(i.knoptekst) || 'Lees meer', { klasse: 'tekstlink' }) : ''}
+            ${kop(3, i.titel, undefined, '', ctx.ki('items', i, 'titel'))}
+            ${txt(i.tekst) ? `<p${ctx.ki('items', i, 'tekst')}>${t(i.tekst)}</p>` : ''}
+            ${h ? metKlik(knop(h, txt(i.knoptekst) || 'Lees meer', { klasse: 'tekstlink' }), txt(i.knoptekst) ? ctx.ki('items', i, 'knoptekst') : '') : ''}
           </li>`
         })
         .join('')}</ul>` : ''}
@@ -164,16 +171,16 @@ function kaarten(blok, ctx) {
 function actiebalk(blok, ctx) {
   const c = blok.content
   const items = lijst(c.items, 3)
-    .map((i) => ({ label: txt(i.titel, 60), href: veiligeHref(i.link) }))
+    .map((i) => ({ label: txt(i.titel, 60), href: veiligeHref(i.link), klik: ctx.ki('items', i, 'titel') }))
     .filter((i) => i.label && i.href)
   if (!items.length) return ''
   const label = txt(c.titel, 80) || 'Snel regelen'
-  return `<nav${ctx.anker ? ` id="${attr(ctx.anker)}"` : ''} class="blok actiebalk schema-${schemaVoor(blok)}" data-blok="kaarten" aria-label="${attr(label)}">
-    ${txt(c.intro) ? `<p class="binnen actiebalk-intro">${t(c.intro, 200)}</p>` : ''}
+  return `<nav${ctx.anker ? ` id="${attr(ctx.anker)}"` : ''} class="blok actiebalk schema-${schemaVoor(blok)}" data-blok="kaarten" aria-label="${attr(label)}"${ctx.k()}>
+    ${txt(c.intro) ? `<p class="binnen actiebalk-intro"${ctx.k('intro')}>${t(c.intro, 200)}</p>` : ''}
     <ul class="binnen actiebalk-lijst">${items
       .map((i) => {
         const ext = isExtern(i.href) ? ' target="_blank" rel="noopener noreferrer"' : ''
-        return `<li><a href="${attr(i.href)}"${ext}>${t(i.label)}</a></li>`
+        return `<li><a href="${attr(i.href)}"${ext}${i.klik}>${t(i.label)}</a></li>`
       })
       .join('')}</ul>
   </nav>`
@@ -185,14 +192,14 @@ function collectie(blok, ctx) {
   const max = Math.min(24, Math.max(1, Number(c.maximaal) || 24))
   const items = lijst(c.items, 24).filter((i) => txt(i.titel)).slice(0, max)
   const kol = c.kolommen === '4' ? 4 : 3
-  const alles = knop(c.knop, c.knoptekst, { klasse: 'tekstlink tekstlink-onderstreept' })
+  const alles = metKlik(knop(c.knop, c.knoptekst, { klasse: 'tekstlink tekstlink-onderstreept' }), ctx.k('knoptekst'))
   return sectie(
     blok,
     ctx,
     'collectie',
     `<div class="binnen">
       <div class="sectie-kop sectie-kop-rij">
-        <div>${eyebrow(c.eyebrow)}${kop(2, c.titel, id)}${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}</div>
+        <div>${eyebrow(c.eyebrow, ctx.k('eyebrow'))}${kop(2, c.titel, id, '', ctx.k('titel'))}${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}</div>
         ${alles}
       </div>
       ${
@@ -203,8 +210,8 @@ function collectie(blok, ctx) {
                 const img = beeld(i.beeld, i.beeld_alt, { klasse: 'collectie-beeld' })
                 const binnen = `${img || '<span class="collectie-vlak" aria-hidden="true"></span>'}
                   <span class="collectie-tekst">
-                    <span class="collectie-titel">${t(i.titel, 120)}</span>
-                    ${txt(i.tekst) ? `<span class="collectie-intro">${t(i.tekst, 300)}</span>` : ''}
+                    <span class="collectie-titel"${ctx.ki('items', i, 'titel')}>${t(i.titel, 120)}</span>
+                    ${txt(i.tekst) ? `<span class="collectie-intro"${ctx.ki('items', i, 'tekst')}>${t(i.tekst, 300)}</span>` : ''}
                   </span>
                   ${h ? `<span class="collectie-pijl" aria-hidden="true">${PIJL}</span>` : ''}`
                 return `<li class="collectie-item">${h ? `<a class="collectie-kaart" href="${attr(h)}">${binnen}</a>` : `<div class="collectie-kaart">${binnen}</div>`}</li>`
@@ -219,7 +226,7 @@ function collectie(blok, ctx) {
 
 function kenmerken(blok, ctx) {
   const c = blok.content
-  const items = lijst(c.items, 6).map((i) => txt(i.titel, 120)).filter(Boolean)
+  const items = lijst(c.items, 6).map((i) => ({ titel: txt(i.titel, 120), klik: ctx.ki('items', i, 'titel') })).filter((i) => i.titel)
   if (!items.length) return ''
   const id = `kop-${ctx.index}`
   return sectie(
@@ -228,7 +235,7 @@ function kenmerken(blok, ctx) {
     'kenmerken',
     `<div class="binnen">
       ${txt(c.titel) ? `<h2 id="${id}" class="sr-only">${t(c.titel)}</h2>` : ''}
-      <ul class="kenmerken-lijst">${items.map((i) => `<li>${t(i)}</li>`).join('')}</ul>
+      <ul class="kenmerken-lijst">${items.map((i) => `<li${i.klik}>${t(i.titel)}</li>`).join('')}</ul>
     </div>`,
     { label: txt(c.titel) ? id : undefined },
   )
@@ -246,7 +253,7 @@ function keuzehulp(blok, ctx) {
     ctx,
     'keuzehulp',
     `<div class="binnen" data-keuzehulp>
-      <div class="sectie-kop">${eyebrow(c.eyebrow)}${kop(2, c.titel, id)}${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}</div>
+      <div class="sectie-kop">${eyebrow(c.eyebrow, ctx.k('eyebrow'))}${kop(2, c.titel, id, '', ctx.k('titel'))}${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}</div>
       <fieldset class="keuze-opties" hidden>
         <legend>${t(txt(c.keuze_label) || tekst(ctx.site, 'keuzehulp.kies'))}</legend>
         ${items
@@ -259,8 +266,8 @@ function keuzehulp(blok, ctx) {
         ${items
           .map(
             (i, n) => `<article class="keuze-uitkomst" data-keuze="${n}">
-              <h3>${t(i.titel, 120)}</h3>
-              <div class="rijk">${rijkeTekst(txt(i.tekst, 4000))}</div>
+              <h3${ctx.ki('items', i, 'titel')}>${t(i.titel, 120)}</h3>
+              <div class="rijk"${ctx.ki('items', i, 'tekst')}>${rijkeTekst(txt(i.tekst, 4000))}</div>
               ${veiligeHref(i.link) ? `<div class="knoppen">${knop(i.link, txt(i.knoptekst) || 'Verder')}</div>` : ''}
             </article>`,
           )
@@ -282,9 +289,9 @@ function faq(blok, ctx) {
     ctx,
     'faq',
     `<div class="binnen smal">
-      ${kop(2, c.titel || 'Veelgestelde vragen', id)}
+      ${kop(2, c.titel || 'Veelgestelde vragen', id, '', txt(c.titel) ? ctx.k('titel') : '')}
       <div class="faq-lijst">${vragen
-        .map((v) => `<details class="faq-item"><summary><span>${t(v.vraag, 300)}</span></summary><div class="rijk">${rijkeTekst(txt(v.antwoord, 4000))}</div></details>`)
+        .map((v) => `<details class="faq-item"><summary><span${ctx.ki('vragen', v, 'vraag')}>${t(v.vraag, 300)}</span></summary><div class="rijk"${ctx.ki('vragen', v, 'antwoord')}>${rijkeTekst(txt(v.antwoord, 4000))}</div></details>`)
         .join('')}</div>
     </div>`,
     { label: id },
@@ -303,12 +310,12 @@ function reeks(blok, ctx) {
     ctx,
     `reeks reeks-${variant === 'genummerd' ? 'genummerd' : 'lijst'}`,
     `<div class="binnen">
-      <div class="sectie-kop">${eyebrow(c.eyebrow)}${kop(2, c.titel, id)}${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}</div>
+      <div class="sectie-kop">${eyebrow(c.eyebrow, ctx.k('eyebrow'))}${kop(2, c.titel, id, '', ctx.k('titel'))}${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}</div>
       <ol class="stappen">${stappen
-        .map((s, n) => `<li class="stap"><span class="stap-nummer" aria-hidden="true">${esc(txt(s.nummer, 4) || String(n + 1))}</span>${kop(3, s.titel || s.label)}${txt(s.tekst) ? `<p>${t(s.tekst)}</p>` : ''}</li>`)
+        .map((s, n) => `<li class="stap"><span class="stap-nummer" aria-hidden="true">${esc(txt(s.nummer, 4) || String(n + 1))}</span>${kop(3, s.titel || s.label, undefined, '', ctx.ki('stappen', s, txt(s.titel) ? 'titel' : 'label'))}${txt(s.tekst) ? `<p${ctx.ki('stappen', s, 'tekst')}>${t(s.tekst)}</p>` : ''}</li>`)
         .join('')}</ol>
-      ${txt(c.slotregel) ? `<p class="slotregel">${t(c.slotregel)}</p>` : ''}
-      ${knop(c.knop, c.knoptekst_reeks) ? `<div class="knoppen">${knop(c.knop, c.knoptekst_reeks)}</div>` : ''}
+      ${txt(c.slotregel) ? `<p class="slotregel"${ctx.k('slotregel')}>${t(c.slotregel)}</p>` : ''}
+      ${knop(c.knop, c.knoptekst_reeks) ? `<div class="knoppen">${metKlik(knop(c.knop, c.knoptekst_reeks), ctx.k('knoptekst_reeks'))}</div>` : ''}
     </div>`,
     { label: txt(c.titel) ? id : undefined },
   )
@@ -337,9 +344,9 @@ function feiten(blok, ctx) {
     `feiten${img ? ' met-beeld' : ''}`,
     `<div class="binnen feiten-grid">
       <div>
-        ${kop(2, c.titel, id)}
-        ${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}
-        ${rijen.length ? `<dl class="feiten-lijst">${rijen.map((f) => `<div class="feit"><dt>${t(f.label, 120)}</dt><dd>${telLink(f.waarde)}</dd></div>`).join('')}</dl>` : ''}
+        ${kop(2, c.titel, id, '', ctx.k('titel'))}
+        ${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}
+        ${rijen.length ? `<dl class="feiten-lijst">${rijen.map((f) => `<div class="feit"><dt${ctx.ki('feiten', f, 'label')}>${t(f.label, 120)}</dt><dd${ctx.ki('feiten', f, 'waarde')}>${telLink(f.waarde)}</dd></div>`).join('')}</dl>` : ''}
       </div>
       ${img}
     </div>`,
@@ -372,9 +379,9 @@ function kaart(blok, ctx) {
         </svg>
       </div>
       <div class="locatie-tekst">
-        ${eyebrow(c.eyebrow)}
-        ${kop(2, c.titel, id)}
-        ${txt(c.intro) ? `<p>${t(c.intro)}</p>` : ''}
+        ${eyebrow(c.eyebrow, ctx.k('eyebrow'))}
+        ${kop(2, c.titel, id, '', ctx.k('titel'))}
+        ${txt(c.intro) ? `<p${ctx.k('intro')}>${t(c.intro)}</p>` : ''}
         <dl class="feiten-lijst compact">
           ${adres ? `<div class="feit"><dt>Adres</dt><dd>${adres}</dd></div>` : ''}
           ${tel ? `<div class="feit"><dt>Telefoon</dt><dd>${telLink(tel)}</dd></div>` : ''}
@@ -447,9 +454,9 @@ function formulierBouwer(blok, ctx) {
     ctx,
     'formulier',
     `<div class="binnen smal">
-      ${eyebrow(c.eyebrow)}
-      ${kop(2, c.titel, id)}
-      ${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}
+      ${eyebrow(c.eyebrow, ctx.k('eyebrow'))}
+      ${kop(2, c.titel, id, '', ctx.k('titel'))}
+      ${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}
       <form class="ll-formulier" id="${fid}" novalidate data-formulier data-herkomst="${attr(ctx.slug)}" data-bevestiging="${attr(bevestiging)}" data-niet-beschikbaar="${attr(tekst(ctx.site, 'formulier.niet_beschikbaar'))}" data-fout-versturen="${attr(tekst(ctx.site, 'formulier.fout_versturen'))}">
         <div class="formulier-stap" data-stap="invullen">
           <p class="formulier-melding fout" role="alert" hidden data-foutsamenvatting></p>
@@ -489,9 +496,9 @@ function mensen(blok, ctx) {
   const max = Math.min(48, Math.max(1, Number(c.maximaal) || 48))
   const leden = lijst(ctx.records?.teamleden, 48).filter((l) => txt(l.naam)).slice(0, max)
   const anker = ctx.anker || 'team'
-  return `<section id="${attr(anker)}" class="blok team schema-${schemaVoor(blok)}" data-blok="mensen" aria-labelledby="${id}">
+  return `<section id="${attr(anker)}" class="blok team schema-${schemaVoor(blok)}" data-blok="mensen" aria-labelledby="${id}"${ctx.k()}>
     <div class="binnen">
-      <div class="sectie-kop">${kop(2, c.titel || 'Ons team', id)}${txt(c.intro) ? `<p class="intro">${t(c.intro)}</p>` : ''}</div>
+      <div class="sectie-kop">${kop(2, c.titel || 'Ons team', id, '', txt(c.titel) ? ctx.k('titel') : '')}${txt(c.intro) ? `<p class="intro"${ctx.k('intro')}>${t(c.intro)}</p>` : ''}</div>
       ${
         leden.length
           ? `<ul class="kaart-raster kol-4 team-raster">${leden
@@ -514,7 +521,7 @@ function mensen(blok, ctx) {
 function cta(blok, ctx) {
   const c = blok.content
   const id = `kop-${ctx.index}`
-  const meta = lijst(c.meta, 6).map((m) => txt(m.tekst, 200)).filter(Boolean)
+  const meta = lijst(c.meta, 6).map((m) => ({ tekst: txt(m.tekst, 200), klik: ctx.ki('meta', m, 'tekst') })).filter((m) => m.tekst)
   const img = beeld(c.media_afbeelding, c.media_alt, { klasse: 'cta-beeld' })
   return sectie(
     blok,
@@ -523,12 +530,12 @@ function cta(blok, ctx) {
     `<div class="binnen cta-grid">
       ${img}
       <div class="cta-tekst">
-        ${eyebrow(c.eyebrow)}
-        ${kop(2, c.titel, id)}
-        ${txt(c.tekst) ? `<p>${t(c.tekst)}</p>` : ''}
-        ${meta.length ? `<ul class="cta-meta">${meta.map((m) => `<li>${telInTekst(m)}</li>`).join('')}</ul>` : ''}
+        ${eyebrow(c.eyebrow, ctx.k('eyebrow'))}
+        ${kop(2, c.titel, id, '', ctx.k('titel'))}
+        ${txt(c.tekst) ? `<p${ctx.k('tekst')}>${t(c.tekst)}</p>` : ''}
+        ${meta.length ? `<ul class="cta-meta">${meta.map((m) => `<li${m.klik}>${telInTekst(m.tekst)}</li>`).join('')}</ul>` : ''}
       </div>
-      ${knop(c.knop, c.knoptekst) ? `<div class="cta-knop">${knop(c.knop, c.knoptekst)}</div>` : ''}
+      ${knop(c.knop, c.knoptekst) ? `<div class="cta-knop">${metKlik(knop(c.knop, c.knoptekst), ctx.k('knoptekst'))}</div>` : ''}
     </div>`,
     { label: txt(c.titel) ? id : undefined },
   )
@@ -551,12 +558,21 @@ export const RENDERERS = {
   mensen,
   cta,
   artikelen_grid: (blok, ctx) =>
-    artikelenGridBlok(blok.content, sorteerArtikelenVoorBlok(ctx), { id: `kop-${ctx.index}`, schema: schemaVoor(blok), anker: ctx.anker, site: ctx.site }),
+    metKlik(artikelenGridBlok(blok.content, sorteerArtikelenVoorBlok(ctx), { id: `kop-${ctx.index}`, schema: schemaVoor(blok), anker: ctx.anker, site: ctx.site }), ctx.k()),
 }
 
+// ctx.klikken: alleen in de voorvertoning in de CMS-editor (&ingesloten=1). Dan krijgt elke sectie
+// data-cms-sectie="<blok.id>" en elk getoond tekstveld data-cms-veld="<pad>" (klik-om-te-bewerken, CMS B-115):
+// ctx.k('veld') voor een veld van het blok, ctx.ki('lijst', item, 'veld') voor een veld van een item (het pad
+// gebruikt de plek van het item in de lijst uit het CMS). Anders geven beide altijd '' en blijft de HTML gelijk.
 export function renderBlok(blok, ctx) {
   const r = RENDERERS[blok?.type]
   if (!r) return ''
   const content = blok.content && typeof blok.content === 'object' && !Array.isArray(blok.content) ? blok.content : {}
-  return r({ ...blok, content }, ctx)
+  const k = klikMaker(blok.id, ctx.klikken === true)
+  const ki = (naam, item, veld) => {
+    const n = Array.isArray(content[naam]) ? content[naam].indexOf(item) : -1
+    return n < 0 ? '' : k([naam, n, veld])
+  }
+  return r({ ...blok, content }, { ...ctx, k, ki })
 }
