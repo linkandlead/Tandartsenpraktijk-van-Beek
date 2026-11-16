@@ -15,14 +15,15 @@ import { laadAlles, haalConcept } from './cms-v1.mjs'
 import { renderPagina } from './pagina.mjs'
 import { ARTIKEL_BASIS, artikelPad, overzichtSectie, detailSectie, detailKop, artikelJsonLd } from './artikelen.mjs'
 import { resolveRedirects } from './redirects.mjs'
+import { tekst, tekstLink } from './teksten.mjs'
 import { tokenVorm, tokenSecondenGeldig, veiligPad, VOORVERTONING_COOKIE } from './voorvertoning.mjs'
+import { voorvertoningCsp, VOORVERTONING_KOPPEN, VOORVERTONING_PAD } from './beveiliging.mjs'
 
 const GEHEUGEN_MS = 30_000
 const OPNIEUW_NA_FOUT_MS = 10_000
 
 const PUBLIEK = 'public, max-age=0, s-maxage=60, stale-while-revalidate=300'
 const PUBLIEK_TERUGVAL = 'public, max-age=0, s-maxage=10, stale-while-revalidate=60'
-const PRIVE = 'private, no-store'
 const HTML = 'text/html; charset=utf-8'
 
 // ------------------------------------------------------------------ inhoud met cache en terugval
@@ -64,7 +65,7 @@ function doorsturen(status, naar, headers = {}) {
 }
 function titelsVan(inhoud) {
   const m = new Map(inhoud.paginas.map((p) => [p.slug, p.titel]))
-  if (!m.has(ARTIKEL_BASIS)) m.set(ARTIKEL_BASIS, 'Artikelen')
+  if (!m.has(ARTIKEL_BASIS)) m.set(ARTIKEL_BASIS, tekst(inhoud.site, 'artikelen.overzicht_titel'))
   for (const a of inhoud.artikelen) m.set(artikelPad(a), a.titel)
   return m
 }
@@ -87,12 +88,12 @@ function render(inhoud, pad, o, { concept = null, voorvertoning = null } = {}) {
     return renderPagina(
       {
         slug: ARTIKEL_BASIS,
-        titel: 'Artikelen',
+        titel: tekst(inhoud.site, 'artikelen.overzicht_titel'),
         beschrijving: `Nieuws en uitleg over mondgezondheid van ${inhoud.site.merk?.naam || inhoud.site.naam || 'de praktijk'}.`,
-        blokken: [{ type: 'header', bg: 'diep', content: { layout: 'compact', hoogte: 'compact', eyebrow: 'Nieuws en uitleg', heading: 'Artikelen', subheading: 'Praktische uitleg over gezonde tanden, tandvlees en behandelingen.' } }],
+        blokken: [{ type: 'header', bg: 'diep', content: { layout: 'compact', hoogte: 'compact', eyebrow: tekst(inhoud.site, 'artikelen.overzicht_eyebrow'), heading: tekst(inhoud.site, 'artikelen.overzicht_titel'), subheading: tekst(inhoud.site, 'artikelen.overzicht_intro') } }],
         records: {},
       },
-      { ...gedeeld, extraSecties: [overzichtSectie(inhoud.artikelen)] },
+      { ...gedeeld, extraSecties: [overzichtSectie(inhoud.artikelen, inhoud.site)] },
     )
   }
   if (pad.startsWith(ARTIKEL_BASIS + '/')) {
@@ -101,19 +102,20 @@ function render(inhoud, pad, o, { concept = null, voorvertoning = null } = {}) {
     const naam = inhoud.site.merk?.naam || inhoud.site.naam || ''
     return renderPagina(
       { slug: pad, titel: a.titel, beschrijving: a.samenvatting, og_beeld: a.foto || null, blokken: [detailKop(a)], records: {} },
-      { ...gedeeld, extraSecties: [detailSectie(a)], jsonld: artikelJsonLd(a, { siteUrl: o.siteUrl, naam }) },
+      { ...gedeeld, extraSecties: [detailSectie(a, inhoud.site)], jsonld: artikelJsonLd(a, { siteUrl: o.siteUrl, naam }) },
     )
   }
   return null
 }
 
 function render404(inhoud, o, extra = {}) {
+  const s = inhoud.site
   return renderPagina(
     {
       slug: '/404',
       titel: 'Pagina niet gevonden',
       beschrijving: 'Deze pagina bestaat niet (meer).',
-      blokken: [{ type: 'header', bg: 'wit', content: { layout: 'compact', hoogte: 'compact', eyebrow: 'Foutmelding 404', heading: 'Deze pagina bestaat niet (meer)', subheading: 'Misschien is de pagina verplaatst. Ga naar de homepage of bekijk direct wat u moet doen bij spoed.', cta_primair_label: 'Naar de homepage', cta_primair_link: '/', cta_secundair_label: 'Spoed', cta_secundair_link: '/spoed', auto_kruimelpad: 'uit' } }],
+      blokken: [{ type: 'header', bg: 'wit', content: { layout: 'compact', hoogte: 'compact', eyebrow: tekst(s, 'fout404.eyebrow'), heading: tekst(s, 'fout404.titel'), subheading: tekst(s, 'fout404.tekst'), cta_primair_label: tekst(s, 'fout404.knop'), cta_primair_link: '/', cta_secundair_label: tekst(s, 'fout404.knop_spoed'), cta_secundair_link: tekstLink(s, 'spoed.link'), auto_kruimelpad: 'uit' } }],
       records: {},
     },
     { site: inhoud.site, titels: new Map(), siteUrl: o.siteUrl, cmsUrl: o.cmsUrl, artikelen: inhoud.artikelen, noindex: true, ...extra },
@@ -137,9 +139,10 @@ export function sitemapXml(inhoud, siteUrl) {
     .join('\n')}\n</urlset>\n`
 }
 
+// SameSite=None + Partitioned: de voorvertoning staat in een frame op cms.linkandlead.nl (B-110). Een Lax-cookie
+// gaat in zo'n frame niet mee, waardoor doorklikken het concept kwijtraakte. Partitioned houdt het cookie bij die
+// insluitende site (CHIPS); Path blijft /__voorvertoning, dus de gewone site ziet het nooit.
 function cookieKop(waarde, maxAge) {
-  // SameSite=None + Partitioned: de cookie werkt ook als de voorvertoning in het voorbeeldvenster van de CMS-editor
-  // staat (iframe op een ander domein). Alleen voor /__voorvertoning, httpOnly en alleen-lezen.
   return `${VOORVERTONING_COOKIE}=${waarde}; Path=/__voorvertoning; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${maxAge}`
 }
 
@@ -153,9 +156,10 @@ export async function verwerk(verzoek, o) {
   // --- Voorvertoning
   if (pad === '/__voorvertoning/sluiten') {
     const terug = veiligPad(verzoek.zoek.get('pad') || '/') ?? '/'
-    return doorsturen(307, terug, { 'cache-control': PRIVE, 'x-robots-tag': 'noindex, nofollow', 'set-cookie': cookieKop('', 0) })
+    return doorsturen(307, terug, { ...voorvertoningsKoppen(o), 'set-cookie': cookieKop('', 0) })
   }
   if (pad === '/__voorvertoning') return voorvertoning(verzoek, o)
+  if (VOORVERTONING_PAD.test(pad)) return antwoord(404, '<!doctype html><html lang="nl"><meta charset="utf-8"><title>Niet gevonden</title><p>Dit adres bestaat niet.</p>', voorvertoningsKoppen(o))
 
   let gelezen
   try {
@@ -177,8 +181,13 @@ export async function verwerk(verzoek, o) {
   return antwoord(404, render404(inhoud, o), { 'cache-control': cache })
 }
 
+// Voorvertoning: noindex, nooit gecachet, en alleen in een frame van het CMS (B-110: de editor sluit hem in).
+function voorvertoningsKoppen(o) {
+  return { ...VOORVERTONING_KOPPEN, 'content-security-policy': voorvertoningCsp(o.cmsUrl) }
+}
+
 async function voorvertoning(verzoek, o) {
-  const koppen = { 'cache-control': PRIVE, 'x-robots-tag': 'noindex, nofollow' }
+  const koppen = voorvertoningsKoppen(o)
   const pad = veiligPad(verzoek.zoek.get('pad') || '/') ?? '/'
   const uitQuery = verzoek.zoek.get('token') ?? verzoek.zoek.get('voorvertoning')
   const token = tokenVorm(uitQuery) ? uitQuery : verzoek.cookies?.[VOORVERTONING_COOKIE]
